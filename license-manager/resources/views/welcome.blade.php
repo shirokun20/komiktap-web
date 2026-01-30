@@ -1,3 +1,5 @@
+@inject('contact', 'App\Settings\ContactSettings')
+@inject('payment', 'App\Settings\PaymentSettings')
 <!DOCTYPE html>
 <html lang="id" class="scroll-smooth">
 
@@ -95,7 +97,23 @@
             position: relative;
             overflow: hidden;
         }
-
+        .payment-instructions ul {
+            list-style-type: disc;
+            padding-left: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .payment-instructions ol {
+            list-style-type: decimal;
+            padding-left: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .payment-instructions li {
+            margin-bottom: 0.25rem;
+        }
+        .payment-instructions strong {
+            color: white;
+            font-weight: 600;
+        }
         .btn-primary:active {
             transform: scale(0.98);
         }
@@ -115,6 +133,7 @@
             list-style: none;
             padding: 0;
         }
+
         .plan-description li {
             position: relative;
             padding-left: 24px;
@@ -122,6 +141,7 @@
             display: flex;
             align-items: center;
         }
+
         .plan-description li::before {
             content: '\f00c';
             font-family: "Font Awesome 6 Free";
@@ -129,9 +149,11 @@
             position: absolute;
             left: 0;
             top: 2px;
-            color: #22c55e; /* green-500 */
+            color: #22c55e;
+            /* green-500 */
             font-size: 14px;
         }
+
         .plan-description strong {
             color: white;
             font-weight: 600;
@@ -152,9 +174,12 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <!-- Logo -->
-                <a href="#" class="flex items-center gap-2 group/logo hover:scale-105 transition-transform duration-300">
-                    <img src="https://komiktap.info/wp-content/uploads/2020/09/cropped-LOGOa-192x192.png" alt="KomikTap Logo" class="w-10 h-10 md:w-12 md:h-12 drop-shadow-[0_0_8px_rgba(255,121,0,0.5)]">
-                    <span class="text-white font-bold text-xl md:text-2xl italic tracking-tighter">KOMIK<span class="text-komik-primary">TAP</span></span>
+                <a href="#"
+                    class="flex items-center gap-2 group/logo hover:scale-105 transition-transform duration-300">
+                    <img src="https://komiktap.info/wp-content/uploads/2020/09/cropped-LOGOa-192x192.png"
+                        alt="KomikTap Logo" class="w-10 h-10 md:w-12 md:h-12 drop-shadow-[0_0_8px_rgba(255,121,0,0.5)]">
+                    <span class="text-white font-bold text-xl md:text-2xl italic tracking-tighter">KOMIK<span
+                            class="text-komik-primary">TAP</span></span>
                 </a>
 
                 <!-- Menu -->
@@ -171,9 +196,9 @@
                         <span
                             class="absolute bottom-0 left-0 w-0 h-0.5 bg-komik-primary group-hover/link:w-full transition-all duration-300"></span>
                     </a>
-                    <a href="#"
+                    <a href="#faq"
                         class="text-gray-300 hover:text-white font-medium text-sm tracking-wide relative group/link py-2">
-                        Cara Baca
+                        FAQ
                         <span
                             class="absolute bottom-0 left-0 w-0 h-0.5 bg-komik-primary group-hover/link:w-full transition-all duration-300"></span>
                     </a>
@@ -181,11 +206,7 @@
 
                 <!-- CTA -->
                 <div class="flex items-center gap-4">
-                    <a href="#"
-                        class="hidden md:flex items-center gap-2 text-gray-400 hover:text-white text-sm font-medium transition-colors">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </a>
-                    <a href="#"
+                    <a href="{{ route('download.index') }}"
                         class="btn-primary px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-komik-primary/20 hover:shadow-komik-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2">
                         <i class="fab fa-android text-lg"></i> Download App
                     </a>
@@ -281,11 +302,11 @@
             <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
 
                 <div id="plansContainer" class="contents">
-                   <!-- Loading Skeleton -->
-                   <div class="col-span-3 text-center py-12">
-                       <i class="fas fa-circle-notch fa-spin text-komik-primary text-4xl"></i>
-                       <p class="text-gray-500 mt-4">Loading plans...</p>
-                   </div>
+                    <!-- Loading Skeleton -->
+                    <div class="col-span-3 text-center py-12">
+                        <i class="fas fa-circle-notch fa-spin text-komik-primary text-4xl"></i>
+                        <p class="text-gray-500 mt-4">Loading plans...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -391,27 +412,14 @@
 
 
     <!-- FAQ -->
-    <section class="pb-16 pt-1 relative z-10">
+    <section id="faq" class="pb-16 pt-1 relative z-10">
         <div class="max-w-3xl mx-auto px-4">
             <h2 class="text-3xl font-bold text-white mb-8 text-center">Frequently Asked Questions</h2>
-            <div class="space-y-4">
-                <div class="glass-card p-6 rounded-2xl hover:bg-white/5 transition-colors">
-                    <h4 class="font-bold text-white text-base mb-2 flex items-center gap-3">
-                        <i class="fa-regular fa-circle-question text-komik-primary text-xl"></i>
-                        Bagaimana cara aktivasi?
-                    </h4>
-                    <p class="text-gray-400 text-sm leading-relaxed pl-8">Setelah pembayaran berhasil, Anda akan
-                        mendapatkan <strong>Kode Lisensi Premium</strong> via email/WhatsApp. Masukkan kode tersebut di
-                        menu <em>Settings > Activate Premium</em> pada aplikasi KomikTap.</p>
-                </div>
-                <div class="glass-card p-6 rounded-2xl hover:bg-white/5 transition-colors">
-                    <h4 class="font-bold text-white text-base mb-2 flex items-center gap-3">
-                        <i class="fa-regular fa-circle-question text-komik-primary text-xl"></i>
-                        Ganti HP bagaimana?
-                    </h4>
-                    <p class="text-gray-400 text-sm leading-relaxed pl-8">Lisensi Anda mendukung multi-device (sesuai
-                        paket). Jika Anda berganti HP, Anda bisa mereset device lama melalui Admin Panel kami atau
-                        hubungi support jika mengalami kendala.</p>
+            <div id="faqContainer" class="space-y-4">
+                <!-- Loading State -->
+                <div class="glass-card p-6 rounded-2xl text-center">
+                    <i class="fas fa-circle-notch fa-spin text-komik-primary text-2xl"></i>
+                    <p class="text-gray-500 mt-2 text-sm">Loading FAQs...</p>
                 </div>
             </div>
         </div>
@@ -446,7 +454,8 @@
                         class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">Donasi</a>
                     <a href="{{ route('contact') }}"
                         class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">Contact</a>
-                    <a href="{{ route('dmca') }}" class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">DMCA</a>
+                    <a href="{{ route('page.show', 'dmca') }}"
+                        class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">DMCA</a>
                 </div>
 
                 <!-- Social Icons -->
@@ -484,7 +493,7 @@
             const discountAmountDisplay = document.getElementById('discountAmount');
 
             let currentDuration = 1;
-            
+
             // Default Values (Fallback)
             let CONFIG = {
                 ketengan_base_price: 15000,
@@ -543,7 +552,7 @@
                 try {
                     const response = await fetch('/api/config');
                     const json = await response.json();
-                    
+
                     if (json.status === 'success') {
                         const data = json.data;
                         // Update Config
@@ -585,7 +594,7 @@
                 try {
                     const response = await fetch('/api/plans');
                     const json = await response.json();
-                    
+
                     if (json.status === 'success') {
                         renderPlans(json.data);
                     }
@@ -599,22 +608,36 @@
                 container.innerHTML = ''; // Clear loading
 
                 const formatK = (price) => Math.round(price / 1000) + 'K';
-                
+
                 // Helper to convert markdown-like bullets to HTML
                 const parseDesc = (desc) => {
-                     // Very simple parser for bullet points
-                     if (!desc) return '';
-                     const lines = desc.split('\n');
-                     let html = '<ul>';
-                     lines.forEach(line => {
-                         if (line.trim().startsWith('-')) {
-                             html += `<li>${line.replace('-', '').trim()}</li>`;
-                         } else {
-                             html += line + '<br>';
-                         }
-                     });
-                     html += '</ul>';
-                     return html;
+                    // Check if desc is valid
+                    if (!desc) return '';
+
+                    const lines = desc.split('\n');
+                    let html = '<ul>';
+
+                    lines.forEach(line => {
+                        let trimmed = line.trim();
+                        if (!trimmed) return; // Skip empty lines
+
+                        // Remove leading dash if present
+                        if (trimmed.startsWith('-')) {
+                            trimmed = trimmed.substring(1).trim();
+                        }
+
+                        // Parse Bold (**text**)
+                        trimmed = trimmed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                        // Parse Italic (*text* or _text_)
+                        trimmed = trimmed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                        trimmed = trimmed.replace(/_(.*?)_/g, '<em>$1</em>');
+
+                        html += `<li>${trimmed}</li>`;
+                    });
+
+                    html += '</ul>';
+                    return html;
                 };
 
                 plans.forEach(plan => {
@@ -667,9 +690,56 @@
                 });
             }
 
+            // Fetch FAQs from API
+            async function fetchFaqs() {
+                try {
+                    const response = await fetch('/api/faqs');
+                    const json = await response.json();
+
+                    if (json.status === 'success') {
+                        renderFaqs(json.data);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch FAQs', error);
+                }
+            }
+
+            function renderFaqs(faqs) {
+                const container = document.getElementById('faqContainer');
+                container.innerHTML = '';
+
+                if (faqs.length === 0) {
+                    container.innerHTML = '<div class="col-span-2 text-center text-gray-500 italic">No questions found.</div>';
+                    return;
+                }
+
+                // Simple markdown parser for answers (bold, italic, links)
+                const parseAnswer = (text) => {
+                    return text
+                        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                        .replace(/_(.*?)_/g, '<i>$1</i>')
+                        .replace(/\n/g, '<br>');
+                };
+
+                faqs.forEach(faq => {
+                    const html = `
+                    <div class="glass-card p-6 rounded-2xl hover:bg-white/5 transition-colors">
+                        <h4 class="font-bold text-white text-base mb-2 flex items-center gap-3">
+                            <i class="fa-regular fa-circle-question text-komik-primary text-xl"></i>
+                            ${faq.question}
+                        </h4>
+                        <p class="text-gray-400 text-sm leading-relaxed pl-8">
+                            ${parseAnswer(faq.answer)}
+                        </p>
+                    </div>`;
+                    container.innerHTML += html;
+                });
+            }
+
             // Init
             fetchConfig(); // Load config async
             fetchPlans(); // Load plans async
+            fetchFaqs(); // Load FAQs async
             updatePrice(); // Show initial state immediately
         });
     </script>
@@ -678,40 +748,48 @@
     <div id="qrisModal" class="fixed inset-0 z-[60] hidden opacity-0 transition-opacity duration-300">
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeQrisModal()"></div>
-        
+
         <!-- Modal Content -->
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md p-4">
-            <div class="glass-card bg-[#1a1a1a] border border-white/10 rounded-3xl p-6 relative shadow-2xl scale-95 transition-transform duration-300 transform" id="qrisContent">
-                <button onclick="closeQrisModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl p-4">
+            <div class="glass-card bg-[#1a1a1a] border border-white/10 rounded-3xl p-6 relative shadow-2xl scale-95 transition-transform duration-300 transform"
+                id="qrisContent">
+                <button onclick="closeQrisModal()"
+                    class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
                     <i class="fas fa-times"></i>
                 </button>
 
-                <div class="text-center">
-                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-komik-primary/10 text-komik-primary mb-4 text-xl">
-                        <i class="fas fa-qrcode"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-1">Scan QRIS</h3>
-                    <p id="modalPlanName" class="text-komik-primary font-bold text-sm mb-2">Premium Access</p>
-                    <p class="text-gray-400 text-xs mb-4">Scan kode di bawah ini untuk pembayaran.</p>
+                    <h3 class="text-xl font-bold text-white mb-4">Pilih Metode Pembayaran</h3>
 
-                    <div class="p-4 bg-white rounded-xl mx-auto max-w-[250px] mb-6 shadow-lg shadow-white/5">
-                        <!-- Real QR Code -->
-                        <img src="assets/images/qris_generated.png" alt="QRIS Code" class="w-full h-auto rounded-lg">
+                    <!-- Payment Method Tabs -->
+                    <div class="flex flex-wrap gap-2 justify-center mb-6" id="paymentMethodsContainer">
+                        <!-- Populated by JS -->
+                        <div class="w-full text-center py-4">
+                            <i class="fas fa-circle-notch fa-spin text-komik-primary"></i>
+                        </div>
+                    </div>
+
+                    <!-- Payment Details Container -->
+                    <div id="paymentDetailsContainer">
+                        <!-- Populated by JS -->
                     </div>
 
                     <!-- Validation Input -->
                     <div class="bg-white/5 rounded-xl p-4 border border-white/10 text-left">
                         <label class="block text-gray-400 text-xs mb-2">Konfirmasi Pembayaran</label>
-                        
-                        <input type="text" id="waInput" placeholder="Nomor WA / Email" class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600 mb-3">
+
+                        <input type="text" id="waInput" placeholder="Nomor WA / Email"
+                            class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600 mb-3">
 
                         <div class="flex gap-2">
-                             <input type="text" id="proofInput" placeholder="3-5 Digit Terakhir Bukti Transfer" class="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600">
-                             <button id="submitBtn" onclick="submitOrder()" class="bg-komik-primary hover:bg-komik-primaryHover text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                 Kirim
-                             </button>
+                            <input type="text" id="proofInput" placeholder="3-5 Digit Terakhir Bukti Transfer"
+                                class="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600">
+                            <button id="submitBtn" onclick="submitOrder()"
+                                class="bg-komik-primary hover:bg-komik-primaryHover text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                Kirim
+                            </button>
                         </div>
-                        <p class="text-[10px] text-gray-500 mt-2 italic">*Masukkan digit terakhir nomor referensi/struk untuk verifikasi.</p>
+                        <p class="text-[10px] text-gray-500 mt-2 italic">*Masukkan digit terakhir nomor referensi/struk
+                            untuk verifikasi.</p>
                     </div>
 
                     <div class="flex items-center justify-center gap-2 text-xs text-gray-500 mt-6">
@@ -723,44 +801,264 @@
         </div>
     </div>
 
+    <!-- Instructions Modal -->
+    <div id="instructionsModal" class="fixed inset-0 z-[70] hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeInstructionsModal()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg p-4">
+             <div class="glass-card bg-[#1a1a1a] border border-white/10 rounded-3xl p-6 relative shadow-2xl scale-95 transition-transform duration-300 transform" id="instructionsModalContent">
+                <button onclick="closeInstructionsModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h3 class="text-lg font-bold text-white mb-4">Petunjuk Pembayaran</h3>
+                <div class="text-gray-300 text-sm payment-instructions max-h-[60vh] overflow-y-auto" id="instructionsContentBody">
+                    <!-- Content populated by JS -->
+                </div>
+             </div>
+        </div>
+    </div>
+
     <script>
-            let SELECTED_PLAN = {
-                name: '',
-                price: 0,
-                devices: 0,
-                duration: 0,
-                type: 'standard' // 'standard' or 'custom'
+        let SELECTED_PLAN = {
+            name: '',
+            price: 0,
+            devices: 0,
+            duration: 0,
+            type: 'standard' // 'standard' or 'custom'
+        };
+
+        function openQrisModal(name, price, devices, duration, type) {
+            const modal = document.getElementById('qrisModal');
+            const content = document.getElementById('qrisContent');
+            const planLabel = document.getElementById('modalPlanName');
+
+            // Update State
+            SELECTED_PLAN = {
+                name: name,
+                price: price,
+                devices: devices,
+                duration: duration,
+                type: type
             };
 
-            function openQrisModal(name, price, devices, duration, type) {
-                const modal = document.getElementById('qrisModal');
-                const content = document.getElementById('qrisContent');
-                const planLabel = document.getElementById('modalPlanName');
-                
-                // Update State
-                SELECTED_PLAN = {
-                    name: name,
-                    price: price,
-                    devices: devices,
-                    duration: duration,
-                    type: type
-                };
-                
-                if(name) {
-                    planLabel.textContent = 'Pembayaran Paket ' + name;
-                    planLabel.classList.remove('hidden');
-                } else {
-                    planLabel.classList.add('hidden');
-                }
-
-                modal.classList.remove('hidden');
-                // Small delay to allow display:block to apply before opacity transition
-                setTimeout(() => {
-                    modal.classList.remove('opacity-0');
-                    content.classList.remove('scale-95');
-                    content.classList.add('scale-100');
-                }, 10);
+            if (name) {
+                const labels = document.querySelectorAll('.modalPlanNameDisplay');
+                labels.forEach(el => {
+                     el.textContent = 'Pembayaran Paket ' + name;
+                     el.classList.remove('hidden');
+                });
+            } else {
+                 const labels = document.querySelectorAll('.modalPlanNameDisplay');
+                 labels.forEach(el => el.classList.add('hidden'));
             }
+
+            modal.classList.remove('hidden');
+            // Small delay to allow display:block to apply before opacity transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+
+        function openInstructionsModal(index) {
+            const content = document.getElementById(`instructions-data-${index}`).innerHTML;
+            const modal = document.getElementById('instructionsModal');
+            const body = document.getElementById('instructionsContentBody');
+            
+            body.innerHTML = content;
+            modal.classList.remove('hidden');
+            // Small delay to allow display:block to apply before opacity transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('instructionsModalContent').classList.remove('scale-95');
+                 document.getElementById('instructionsModalContent').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeInstructionsModal() {
+             const modal = document.getElementById('instructionsModal');
+             modal.classList.add('opacity-0');
+             document.getElementById('instructionsModalContent').classList.remove('scale-100');
+             document.getElementById('instructionsModalContent').classList.add('scale-95');
+             setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        async function copyToClipboard(text) {
+            try {
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(text);
+                    alert('Nomor berhasil disalin!');
+                } else {
+                    // Fallback
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(textArea);
+                    alert('Nomor berhasil disalin!');
+                }
+            } catch (err) {
+                console.error('Gagal menyalin:', err);
+                alert('Gagal menyalin nomor. Silakan salin manual.');
+            }
+        }
+
+        function selectPaymentMethod(index) {
+            // Update Buttons
+            document.querySelectorAll('.payment-method-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-komik-primary', 'text-white', 'bg-komik-primary/10');
+                btn.classList.add('text-gray-400', 'bg-white/5', 'border-white/10');
+                
+                if(parseInt(btn.dataset.index) === index) {
+                    btn.classList.add('active', 'border-komik-primary', 'text-white', 'bg-komik-primary/10');
+                    btn.classList.remove('text-gray-400', 'bg-white/5', 'border-white/10');
+                }
+            });
+
+            // Show Content
+            document.querySelectorAll('.payment-detail-content').forEach(el => el.classList.add('hidden'));
+            // Use querySelector to find the specific element id that starts with payment-detail-{index}
+            // Actually ID is unique, so:
+            const specificContent = document.getElementById(`payment-detail-${index}`);
+            if(specificContent) specificContent.classList.remove('hidden');
+        }
+
+        let PAYMENT_METHODS = [];
+
+        async function fetchPaymentMethods() {
+            try {
+                const response = await fetch('/api/payment-methods');
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.data.is_enabled) {
+                    PAYMENT_METHODS = result.data.payment_methods || [];
+                    renderPaymentMethods();
+                } else {
+                     // Handle disabled or error case if needed
+                     const tabsContainer = document.getElementById('paymentMethodsContainer');
+                     tabsContainer.innerHTML = '<div class="w-full text-center py-4 text-gray-500">Metode pembayaran tidak tersedia saat ini.</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching payment methods:', error);
+            }
+        }
+
+        function renderPaymentMethods() {
+            const tabsContainer = document.getElementById('paymentMethodsContainer');
+            const detailsContainer = document.getElementById('paymentDetailsContainer');
+            
+            if (PAYMENT_METHODS.length === 0) {
+                tabsContainer.innerHTML = '';
+                detailsContainer.innerHTML = '<div class="text-center py-6"><p class="text-gray-500">Belum ada metode pembayaran yang tersedia.</p></div>';
+                return;
+            }
+
+            // Render Tabs
+            tabsContainer.innerHTML = PAYMENT_METHODS.map((method, index) => `
+                <button onclick="selectPaymentMethod(${index})" 
+                        class="payment-method-btn px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-gray-400 hover:text-white hover:border-komik-primary hover:bg-komik-primary/10 transition-all ${index === 0 ? 'active border-komik-primary text-white bg-komik-primary/10' : ''}"
+                        data-index="${index}">
+                    ${method.name}
+                </button>
+            `).join('');
+
+            // Render Details
+            detailsContainer.innerHTML = PAYMENT_METHODS.map((method, index) => {
+                const instructions = method.instructions || '';
+                const qrisUrl = method.qris_image_path ? `/storage/${method.qris_image_path}` : null;
+
+                return `
+                <div class="payment-detail-content ${index === 0 ? '' : 'hidden'}" id="payment-detail-${index}">
+                    <div class="flex items-center gap-4 mb-6 bg-white/5 p-4 rounded-2xl border border-white/10">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-komik-primary to-orange-600 flex items-center justify-center text-white shadow-lg shadow-komik-primary/20 shrink-0">
+                            <i class="fas fa-wallet text-lg"></i>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="text-lg font-bold text-white leading-tight">${method.name}</h3>
+                            <div class="inline-flex items-center gap-1.5 mt-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                <p class="text-gray-400 text-xs font-medium modalPlanNameDisplay">Premium Access</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${method.account_number ? `
+                    <div class="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-4 mb-4 border border-white/10 relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-komik-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <p class="text-xs text-gray-500 mb-1 font-medium tracking-wide">NOMOR REKENING / VA</p>
+                        <div class="text-2xl font-mono font-bold text-white tracking-widest flex items-center justify-between gap-2 group-hover:text-komik-primary transition-colors cursor-pointer" onclick="copyToClipboard('${method.account_number}')">
+                            <span>${method.account_number}</span>
+                            <i class="fas fa-copy text-sm text-gray-600 group-hover:text-komik-primary transition-colors"></i>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2 font-medium uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-komik-primary"></span>
+                            ${method.account_holder || ''}
+                        </p>
+                    </div>
+                    ` : ''}
+
+                    ${qrisUrl ? `
+                    <div class="p-2 bg-white rounded-xl mx-auto max-w-[200px] mb-6 shadow-lg shadow-white/5">
+                        <img src="${qrisUrl}" alt="QRIS Code" class="w-full h-auto rounded-lg">
+                    </div>
+                    ` : ''}
+
+                    <div class="text-center">
+                        <button onclick="openInstructionsModal('${index}')" class="text-sm text-komik-primary hover:text-white underline decoration-dashed underline-offset-4 transition-colors">
+                            Lihat Cara Pembayaran
+                        </button>
+                    </div>
+
+                    <!-- Hidden Instructions Data -->
+                    <div id="instructions-data-${index}" class="hidden">
+                        ${instructions}
+                    </div>
+                    <br>
+                </div>
+                `;
+            }).join('');
+            
+            // Re-apply current plan name if modal is open
+            if(SELECTED_PLAN.name) {
+                 const labels = document.querySelectorAll('.modalPlanNameDisplay');
+                 labels.forEach(el => {
+                      el.textContent = 'Pembayaran Paket ' + SELECTED_PLAN.name;
+                      el.classList.remove('hidden');
+                 });
+            }
+        }
+
+        function openInstructionsModal(index) {
+            const content = document.getElementById(`instructions-data-${index}`).innerHTML;
+            const modal = document.getElementById('instructionsModal');
+            const body = document.getElementById('instructionsContentBody');
+            
+            body.innerHTML = content;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('instructionsModalContent').classList.remove('scale-95');
+                 document.getElementById('instructionsModalContent').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeInstructionsModal() {
+             const modal = document.getElementById('instructionsModal');
+             modal.classList.add('opacity-0');
+             document.getElementById('instructionsModalContent').classList.remove('scale-100');
+             document.getElementById('instructionsModalContent').classList.add('scale-95');
+             setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+             fetchPaymentMethods();
+        });
 
         function closeQrisModal() {
             const modal = document.getElementById('qrisModal');
@@ -768,7 +1066,7 @@
             modal.classList.add('opacity-0');
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
-            
+
             setTimeout(() => {
                 modal.classList.add('hidden');
             }, 300);
@@ -779,7 +1077,7 @@
             const proof = document.getElementById('proofInput').value;
             const btn = document.getElementById('submitBtn');
 
-            if(!wa || !proof) {
+            if (!wa || !proof) {
                 alert('Mohon lengkapi Nomor WA dan Bukti Transfer');
                 return;
             }
@@ -792,15 +1090,15 @@
 
             // If Custom (Ketengan), recalculate based on current slider values
             if (SELECTED_PLAN.type === 'custom') {
-                 planName = 'Ketengan';
-                 devices = parseInt(document.getElementById('deviceSlider').value);
-                 // We need to get duration from the active button
-                 const activeDurationBtn = document.querySelector('.duration-btn.active');
-                 if(activeDurationBtn) duration = parseInt(activeDurationBtn.dataset.value);
-                 
-                 // Get price from simple parsing or global var logic
-                 const priceText = document.getElementById('totalPrice').textContent;
-                 amount = parseInt(priceText.replace(/[^0-9]/g, ''));
+                planName = 'Ketengan';
+                devices = parseInt(document.getElementById('deviceSlider').value);
+                // We need to get duration from the active button
+                const activeDurationBtn = document.querySelector('.duration-btn.active');
+                if (activeDurationBtn) duration = parseInt(activeDurationBtn.dataset.value);
+
+                // Get price from simple parsing or global var logic
+                const priceText = document.getElementById('totalPrice').textContent;
+                amount = parseInt(priceText.replace(/[^0-9]/g, ''));
             }
 
             // Lock button
@@ -826,8 +1124,8 @@
 
                 const result = await response.json();
 
-                if(result.status === 'success') {
-                    window.location.href = 'payment-success.html';
+                if (result.status === 'success') {
+                    window.location.href = '/success/' + result.data.transaction_code;
                 } else {
                     // Extract message from data if available, or just use general error
                     const msg = result.data && result.data.message ? result.data.message : 'Unknown error';

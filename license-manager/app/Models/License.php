@@ -12,4 +12,9 @@ class License extends Model
         'customer_contact' => 'encrypted',
         'expires_at' => 'datetime',
     ];
+
+    public function devices()
+    {
+        return $this->hasMany(LicenseDevice::class);
+    }
 }

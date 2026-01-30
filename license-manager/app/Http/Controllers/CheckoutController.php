@@ -74,8 +74,11 @@ class CheckoutController extends Controller
                 'status' => 'pending',
             ]);
 
+            $transaction->refresh(); // Get the auto-generated code
+
             return $this->success([
                 'transaction_id' => $transaction->id,
+                'transaction_code' => $transaction->code,
                 'message' => 'Order received successfully!'
             ]);
 

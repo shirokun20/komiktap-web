@@ -27,4 +27,25 @@ class ApiController extends Controller
         $plans = Plan::where('is_active', true)->orderBy('sort_order', 'asc')->get();
         return $this->success($plans);
     }
+
+    public function faqs()
+    {
+        $faqs = \App\Models\Faq::where('is_active', true)->orderBy('sort_order', 'asc')->get();
+        return $this->success($faqs);
+    }
+
+    public function paymentMethods(\App\Settings\PaymentSettings $settings)
+    {
+        $methods = collect($settings->payment_methods)->map(function ($method) {
+            if (!empty($method['instructions'])) {
+                $method['instructions'] = str($method['instructions'])->markdown();
+            }
+            return $method;
+        });
+
+        return $this->success([
+            'is_enabled' => $settings->is_enabled,
+            'payment_methods' => $methods
+        ]);
+    }
 }

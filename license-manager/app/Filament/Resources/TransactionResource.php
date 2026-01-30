@@ -12,12 +12,33 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
 
 class TransactionResource extends Resource
 {
     protected static ?string $model = Transaction::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+
+    protected static ?string $navigationGroup = 'Business';
+    
+    protected static ?int $navigationSort = 1;
+
+    // Sort by latest by default
+    protected static ?string $recordTitleAttribute = 'code';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['code', 'customer_contact', 'plan_name'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Contact' => $record->customer_contact,
+            'Status' => $record->status,
+        ];
+    }
 
     // Sort by latest by default
     protected static ?string $defaultSort = 'created_at'; 

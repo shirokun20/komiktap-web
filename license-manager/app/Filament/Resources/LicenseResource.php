@@ -12,25 +12,61 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
 
 class LicenseResource extends Resource
 {
     protected static ?string $model = License::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-key';
+
+    protected static ?string $navigationGroup = 'Business';
+
+    protected static ?int $navigationSort = 2;
+    
+    protected static ?string $recordTitleAttribute = 'key';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['key', 'customer_contact'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Contact' => $record->customer_contact,
+            'Status' => $record->status,
+        ];
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('key')
-                    ->required(),
-                Forms\Components\TextInput::make('status')
-                    ->required(),
-                Forms\Components\TextInput::make('max_devices')
-                    ->required()
-                    ->numeric()
-                    ->default(3),
+                Forms\Components\Section::make('License Details')
+                    ->schema([
+                        Forms\Components\TextInput::make('key')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('customer_contact')
+                            ->label('Customer Contact (Email/WA)')
+                            ->placeholder('e.g. +628123456789'),
+                        Forms\Components\Select::make('status')
+                            ->options([
+                                'active' => 'Active',
+                                'suspended' => 'Suspended',
+                                'banned' => 'Banned',
+                            ])
+                            ->required()
+                            ->default('active'),
+                        Forms\Components\TextInput::make('max_devices')
+                            ->required()
+                            ->numeric()
+                            ->default(3),
+                        Forms\Components\DateTimePicker::make('expires_at')
+                            ->native(false),
+                    ])->columns(2),
             ]);
     }
 
@@ -84,7 +120,7 @@ class LicenseResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\DevicesRelationManager::class,
         ];
     }
 
