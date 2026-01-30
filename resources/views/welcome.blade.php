@@ -885,24 +885,49 @@
             }, 300);
         }
 
-        async function copyToClipboard(text) {
+        function copyToClipboard(text) {
+            console.log(text);
+            if (!text) return;
+
+            // Try modern API first
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Nomor berhasil disalin!');
+                }).catch(err => {
+                    console.error('Clipboard API Error:', err);
+                    fallbackCopyToClipboard(text);
+                });
+            } else {
+                fallbackCopyToClipboard(text);
+            }
+        }
+
+        function fallbackCopyToClipboard(text) {
             try {
-                if (navigator.clipboard) {
-                    await navigator.clipboard.writeText(text);
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                
+                // Ensure it's not visible but part of the document
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                
+                textArea.focus();
+                textArea.select();
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
                     alert('Nomor berhasil disalin!');
                 } else {
-                    // Fallback
-                    const textArea = document.createElement("textarea");
-                    textArea.value = text;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand("copy");
-                    document.body.removeChild(textArea);
-                    alert('Nomor berhasil disalin!');
+                    throw new Error('execCommand returned false');
                 }
             } catch (err) {
-                console.error('Gagal menyalin:', err);
-                alert('Gagal menyalin nomor. Silakan salin manual.');
+                console.error('Fallback Copy Error:', err);
+                alert('Gagal menyalin nomor. Silakan salin secara manual.');
             }
         }
 
@@ -920,6 +945,11 @@
 
             // Show Content
             document.querySelectorAll('.payment-detail-content').forEach(el => el.classList.add('hidden'));
+            
+            // Hide Placeholder
+            const placeholder = document.getElementById('payment-placeholder');
+            if(placeholder) placeholder.classList.add('hidden');
+
             // Use querySelector to find the specific element id that starts with payment-detail-{index}
             // Actually ID is unique, so:
             const specificContent = document.getElementById(`payment-detail-${index}`);
@@ -959,19 +989,19 @@
             // Render Tabs
             tabsContainer.innerHTML = PAYMENT_METHODS.map((method, index) => `
                 <button onclick="selectPaymentMethod(${index})" 
-                        class="payment-method-btn px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-gray-400 hover:text-white hover:border-komik-primary hover:bg-komik-primary/10 transition-all ${index === 0 ? 'active border-komik-primary text-white bg-komik-primary/10' : ''}"
+                        class="payment-method-btn px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-gray-400 hover:text-white hover:border-komik-primary hover:bg-komik-primary/10 transition-all"
                         data-index="${index}">
                     ${method.name}
                 </button>
             `).join('');
 
             // Render Details
-            detailsContainer.innerHTML = PAYMENT_METHODS.map((method, index) => {
+            let detailsHtml = PAYMENT_METHODS.map((method, index) => {
                 const instructions = method.instructions || '';
                 const qrisUrl = method.qris_image_path ? `/storage/${method.qris_image_path}` : null;
 
                 return `
-                <div class="payment-detail-content ${index === 0 ? '' : 'hidden'}" id="payment-detail-${index}">
+                <div class="payment-detail-content hidden" id="payment-detail-${index}">
                     <div class="flex items-center gap-4 mb-6 bg-white/5 p-4 rounded-2xl border border-white/10">
                         <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-komik-primary to-orange-600 flex items-center justify-center text-white shadow-lg shadow-komik-primary/20 shrink-0">
                             <i class="fas fa-wallet text-lg"></i>
@@ -986,10 +1016,10 @@
                     </div>
                     
                     ${method.account_number ? `
-                    <div class="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-4 mb-4 border border-white/10 relative overflow-hidden group">
+                    <div class="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-4 mb-4 border border-white/10 relative overflow-hidden group" onclick="copyToClipboard('${method.account_number}')">
                         <div class="absolute inset-0 bg-komik-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <p class="text-xs text-gray-500 mb-1 font-medium tracking-wide">NOMOR REKENING / VA</p>
-                        <div class="text-2xl font-mono font-bold text-white tracking-widest flex items-center justify-between gap-2 group-hover:text-komik-primary transition-colors cursor-pointer" onclick="copyToClipboard('${method.account_number}')">
+                        <div class="text-2xl font-mono font-bold text-white tracking-widest flex items-center justify-between gap-2 group-hover:text-komik-primary transition-colors cursor-pointer">
                             <span>${method.account_number}</span>
                             <i class="fas fa-copy text-sm text-gray-600 group-hover:text-komik-primary transition-colors"></i>
                         </div>
@@ -1020,6 +1050,19 @@
                 </div>
                 `;
             }).join('');
+
+            // Add Placeholder
+            detailsHtml += `
+                <div id="payment-placeholder" class="text-center py-12 px-6">
+                    <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-gray-600 mx-auto mb-4 border border-white/5">
+                        <i class="fas fa-mouse-pointer text-2xl"></i>
+                    </div>
+                    <h4 class="text-white font-bold mb-2">Pilih Metode Pembayaran</h4>
+                    <p class="text-gray-500 text-sm">Silakan pilih salah satu metode di atas untuk melihat detail pembayaran.</p>
+                </div>
+            `;
+
+            detailsContainer.innerHTML = detailsHtml;
             
             // Re-apply current plan name if modal is open
             if(SELECTED_PLAN.name) {
