@@ -25,6 +25,11 @@ class License extends Model
             ->dontSubmitEmptyLogs();
     }
 
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
+
     public function devices()
     {
         return $this->hasMany(LicenseDevice::class);

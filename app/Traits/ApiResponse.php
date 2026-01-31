@@ -39,4 +39,21 @@ trait ApiResponse
             'status' => 'failed' // user said "berhasil atau gagal", so 'success' or 'failed'
         ], $code);
     }
+
+    /**
+     * Send a validation error response.
+     *
+     * @param mixed $errors
+     * @return JsonResponse
+     */
+    protected function validationError($errors): JsonResponse
+    {
+        return response()->json([
+            'app' => 'Kuron',
+            'version' => config('app.version', '1.0.0'),
+            'data' => $errors,
+            'status' => 'failed',
+            'message' => 'Validation error'
+        ], 422);
+    }
 }

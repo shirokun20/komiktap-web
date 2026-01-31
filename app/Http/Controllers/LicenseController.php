@@ -14,11 +14,15 @@ class LicenseController extends Controller
 
     public function check(Request $request)
     {
-        $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'license_key' => 'required|string',
             'device_id' => 'required|string',
             'device_name' => 'nullable|string',
         ]);
+
+        if ($validator->fails()) {
+            return $this->validationError($validator->errors());
+        }
 
         $key = $request->license_key;
         $deviceId = $request->device_id;

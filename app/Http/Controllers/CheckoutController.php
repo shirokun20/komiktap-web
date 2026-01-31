@@ -15,7 +15,7 @@ class CheckoutController extends Controller
 
     public function store(Request $request, \App\Settings\PricingSettings $settings)
     {
-        $validated = $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'plan_name' => 'required|string',
             'device_quota' => 'required|integer|min:1',
             'duration_months' => 'required|integer|min:1',
@@ -24,6 +24,12 @@ class CheckoutController extends Controller
             'proof_digits' => 'required|string|max:5',
             'amount' => 'nullable|numeric|min:1000', // For Donation
         ]);
+
+        if ($validator->fails()) {
+            return $this->validationError($validator->errors());
+        }
+
+        $validated = $validator->validated();
 
         try {
             $planName = $validated['plan_name'];

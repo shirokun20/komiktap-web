@@ -11,6 +11,11 @@ class ApiController extends Controller
 {
     use ApiResponse;
 
+    public function me(Request $request)
+    {
+        return $this->success($request->user());
+    }
+
     public function config(PricingSettings $settings)
     {
         return $this->success([
