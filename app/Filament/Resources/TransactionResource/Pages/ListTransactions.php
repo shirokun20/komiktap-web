@@ -16,4 +16,15 @@ class ListTransactions extends ListRecords
             Actions\CreateAction::make(),
         ];
     }
+
+    public function getTabs(): array
+    {
+        return [
+            'all' => \Filament\Resources\Pages\ListRecords\Tab::make('All Transactions'),
+            'donations' => \Filament\Resources\Pages\ListRecords\Tab::make('Donations')
+                ->modifyQueryUsing(fn ($query) => $query->where('code', 'LIKE', 'KURON-PEDULI-%')),
+            'subscriptions' => \Filament\Resources\Pages\ListRecords\Tab::make('Subscriptions')
+                ->modifyQueryUsing(fn ($query) => $query->where('code', 'NOT LIKE', 'KURON-PEDULI-%')),
+        ];
+    }
 }

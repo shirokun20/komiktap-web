@@ -221,7 +221,7 @@
 
             <div
                 class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-komik-primary/10 border border-komik-primary/20 text-komik-primary text-xs font-semibold uppercase tracking-wider mb-6">
-                <i class="fa-solid fa-crown"></i> Premium Access
+                <i class="fa-solid fa-crown"></i> Akses Premium
             </div>
 
             <h1 class="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
@@ -258,7 +258,7 @@
                         class="w-16 h-16 mx-auto bg-komik-card rounded-full flex items-center justify-center text-3xl text-red-500 mb-6 group-hover:bg-red-500/10 transition-colors">
                         <i class="fa-solid fa-ban"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">No Ads</h3>
+                    <h3 class="text-xl font-bold text-white mb-3">Tanpa Iklan</h3>
                     <p class="text-sm text-gray-400">Hilangkan semua iklan popup dan banner yang mengganggu saat
                         membaca.</p>
                 </div>
@@ -270,7 +270,7 @@
                         class="w-16 h-16 mx-auto bg-komik-primary/10 rounded-full flex items-center justify-center text-3xl text-komik-primary mb-6 group-hover:bg-komik-primary/20 transition-colors">
                         <i class="fa-solid fa-mobile-screen-button"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Multi-Device</h3>
+                    <h3 class="text-xl font-bold text-white mb-3">Multi Perangkat</h3>
                     <p class="text-sm text-gray-400">Satu akun premium bisa aktif di <strong>3 Device</strong> berbeda
                         sekaligus.</p>
                 </div>
@@ -282,7 +282,7 @@
                         class="w-16 h-16 mx-auto bg-komik-card rounded-full flex items-center justify-center text-3xl text-komik-yellow mb-6 group-hover:bg-komik-yellow/10 transition-colors">
                         <i class="fa-solid fa-file-pdf"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Offline & PDF</h3>
+                    <h3 class="text-xl font-bold text-white mb-3">Baca Offline & PDF</h3>
                     <p class="text-sm text-gray-400">Download chapter favoritmu atau simpan sebagai PDF untuk dibaca
                         tanpa internet.</p>
                 </div>
@@ -305,7 +305,7 @@
                     <!-- Loading Skeleton -->
                     <div class="col-span-3 text-center py-12">
                         <i class="fas fa-circle-notch fa-spin text-komik-primary text-4xl"></i>
-                        <p class="text-gray-500 mt-4">Loading plans...</p>
+                        <p class="text-gray-500 mt-4">Memuat paket...</p>
                     </div>
                 </div>
             </div>
@@ -322,7 +322,7 @@
                         <div
                             class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700 text-xs font-semibold text-gray-300 mb-4">
                             <i class="fas fa-sliders-h text-komik-primary"></i>
-                            <span>Custom Configuration</span>
+                            <span>Konfigurasi Kustom</span>
                         </div>
                         <h2 class="text-3xl font-bold text-white mb-4">Paket Ketengan</h2>
                         <p class="text-gray-400 mb-8 leading-relaxed">
@@ -381,20 +381,20 @@
 
                         <div class="w-full space-y-3 mb-8 text-sm text-left">
                             <div class="flex justify-between text-gray-400">
-                                <span>Base Price</span>
+                                <span>Harga Dasar</span>
                                 <span class="text-white" id="basePriceDisplay">IDR 15,000</span>
                             </div>
                             <div class="flex justify-between text-gray-400">
-                                <span>Device Multiplier</span>
+                                <span>Jumlah Perangkat</span>
                                 <span class="text-white">x<span id="deviceCountSummary">3</span></span>
                             </div>
                             <div class="flex justify-between text-gray-400">
-                                <span>Duration</span>
+                                <span>Durasi</span>
                                 <span class="text-white">x<span id="durationSummary">1 Bulan</span></span>
                             </div>
                             <div class="h-px bg-gray-700 my-2"></div>
                             <div class="flex justify-between text-komik-primary font-medium">
-                                <span>Total Discount</span>
+                                <span>Total Diskon</span>
                                 <span id="discountAmount">- IDR 0</span>
                             </div>
                         </div>
@@ -419,7 +419,7 @@
                 <!-- Loading State -->
                 <div class="glass-card p-6 rounded-2xl text-center">
                     <i class="fas fa-circle-notch fa-spin text-komik-primary text-2xl"></i>
-                    <p class="text-gray-500 mt-2 text-sm">Loading FAQs...</p>
+                    <p class="text-gray-500 mt-2 text-sm">Memuat pertanyaan...</p>
                 </div>
             </div>
         </div>
@@ -450,7 +450,7 @@
 
                 <!-- Simple Links -->
                 <div class="flex flex-wrap justify-center gap-6 md:gap-8 text-sm font-medium text-gray-400">
-                    <a href="web-donasin.html"
+                    <a href="{{ route('donation.index') }}"
                         class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">Donasi</a>
                     <a href="{{ route('contact') }}"
                         class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">Contact</a>
@@ -646,7 +646,7 @@
                         html = `
                         <div class="glass-card p-8 rounded-3xl relative transform md:-translate-y-4 border-komik-primary/50 shadow-[0_0_50px_rgba(255,121,0,0.15)] z-10 bg-[#25242b]">
                             <div class="absolute top-4 right-4 bg-gradient-to-r from-komik-primary to-komik-accent text-black text-[10px] font-bold px-3 py-1 rounded-full tracking-wider">
-                                MOST POPULAR
+                                PALING LARIS
                             </div>
 
                             <h3 class="text-2xl font-bold text-white mb-2">${plan.name}</h3>
@@ -664,7 +664,7 @@
 
                             <button onclick="openQrisModal('${plan.name}', ${plan.price}, ${plan.max_devices}, ${plan.duration_months}, 'standard')"
                                 class="w-full py-4 rounded-xl btn-primary font-bold shadow-lg shadow-komik-primary/25 hover:shadow-komik-primary/50 transition-all transform hover:scale-[1.02]">
-                                Get ${plan.name} Now
+                                Beli Paket ${plan.name}
                             </button>
                         </div>`;
                     } else {
@@ -682,7 +682,7 @@
 
                             <button onclick="openQrisModal('${plan.name}', ${plan.price}, ${plan.max_devices}, ${plan.duration_months}, 'standard')"
                                 class="block w-full py-3 rounded-xl border border-white/20 hover:bg-white/10 text-white text-center transition-all font-medium">
-                                Choose ${plan.name}
+                                Pilih Paket ${plan.name}
                             </button>
                         </div>`;
                     }
@@ -709,7 +709,7 @@
                 container.innerHTML = '';
 
                 if (faqs.length === 0) {
-                    container.innerHTML = '<div class="col-span-2 text-center text-gray-500 italic">No questions found.</div>';
+                    container.innerHTML = '<div class="col-span-2 text-center text-gray-500 italic">Belum ada pertanyaan.</div>';
                     return;
                 }
 
@@ -1010,7 +1010,7 @@
                             <h3 class="text-lg font-bold text-white leading-tight">${method.name}</h3>
                             <div class="inline-flex items-center gap-1.5 mt-1">
                                 <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                                <p class="text-gray-400 text-xs font-medium modalPlanNameDisplay">Premium Access</p>
+                                <p class="text-gray-400 text-xs font-medium modalPlanNameDisplay">Akses Premium</p>
                             </div>
                         </div>
                     </div>

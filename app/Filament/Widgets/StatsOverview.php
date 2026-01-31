@@ -17,11 +17,14 @@ class StatsOverview extends BaseWidget
 
     protected function getStats(): array
     {
-        // Calculate Total Revenue (only approved transactions)
-        $totalRevenue = Transaction::where('status', 'approved')->sum('amount');
+        // Calculate Total Revenue (only approved transactions, excluding donations)
+        $totalRevenue = Transaction::where('status', 'approved')
+            ->where('code', 'not like', 'KURON-PEDULI%')
+            ->sum('amount');
         
         // Calculate Today's Revenue
         $todayRevenue = Transaction::where('status', 'approved')
+            ->where('code', 'not like', 'KURON-PEDULI%')
             ->whereDate('created_at', today())
             ->sum('amount');
 

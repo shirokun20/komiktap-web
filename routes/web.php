@@ -24,6 +24,9 @@ Route::get('/invoices/{transaction:code}', function (\App\Models\Transaction $tr
     return view('invoices.show', compact('transaction'));
 })->name('invoices.show');
 
+Route::get('/donasi', [\App\Http\Controllers\DonationController::class, 'index'])->name('donation.index');
+Route::get('/donasi/{slug}', [\App\Http\Controllers\DonationController::class, 'show'])->name('donation.show');
+
 Route::get('/download', function () {
     $apkVersions = \App\Models\ApkVersion::where('is_active', true)->orderBy('created_at', 'desc')->get();
     $latestApk = $apkVersions->first();
@@ -48,6 +51,8 @@ Route::get('/download/latest', function () {
     
     return Storage::disk('public')->download($apk->file_path, 'KomikTap_v' . $apk->version_code . '.apk');
 })->name('download.file');
+
+Route::redirect('/web-donasin.html', '/donasi');
 
 Route::get('/{slug}', function ($slug) {
     if (in_array($slug, ['assets', 'storage', 'admin', 'livewire'])) {

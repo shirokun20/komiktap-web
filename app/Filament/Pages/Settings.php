@@ -8,9 +8,8 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-
 use App\Settings\ContactSettings;
-
+use App\Settings\DonationSettings;
 
 class Settings extends Page
 {
@@ -28,21 +27,20 @@ class Settings extends Page
     public function mount(PricingSettings $settings, ContactSettings $contactSettings)
     {
         $this->form->fill([
-            // existing pricing...
+            // Pricing
             'ketengan_base_price' => $settings->ketengan_base_price,
             'discount_3_months' => $settings->discount_3_months,
             'discount_6_months' => $settings->discount_6_months,
             'discount_12_months' => $settings->discount_12_months,
             'device_discount_percentage' => $settings->device_discount_percentage,
             
-            // existing contact...
+            // Contact
             'whatsapp_number' => $contactSettings->whatsapp_number,
             'whatsapp_description' => $contactSettings->whatsapp_description,
             'email_address' => $contactSettings->email_address,
             'email_description' => $contactSettings->email_description,
             'discord_url' => $contactSettings->discord_url,
             'discord_name' => $contactSettings->discord_name,
-
             'discord_description' => $contactSettings->discord_description,
         ]);
     }
@@ -54,7 +52,6 @@ class Settings extends Page
                 Section::make('Paket Ketengan Configuration')
                     ->description('Set base price and duration discounts')
                     ->schema([
-                        // ... existing fields ...
                         TextInput::make('ketengan_base_price')
                             ->label('Base Price (Per Device/Month)')
                             ->required()
@@ -87,7 +84,6 @@ class Settings extends Page
                 Section::make('Contact Information')
                     ->description('Manage contact details displayed on the website')
                     ->schema([
-                         // ... existing contact fields ...
                         TextInput::make('whatsapp_number')->label('WhatsApp Number')->required(),
                         TextInput::make('whatsapp_description')->label('WhatsApp Description')->required(),
                         TextInput::make('email_address')->label('Email Address')->email()->required(),
@@ -121,8 +117,6 @@ class Settings extends Page
         $contactSettings->discord_name = $data['discord_name'];
         $contactSettings->discord_description = $data['discord_description'];
         $contactSettings->save();
-
-
 
         Notification::make() 
             ->title('Saved successfully')

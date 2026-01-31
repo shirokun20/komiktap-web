@@ -201,6 +201,19 @@ class TransactionResource extends Resource
                     ->modalDescription('Are you sure? This will generate a License Key automatically.')
                     ->visible(fn (Transaction $record) => $record->status === 'pending')
                     ->action(function (Transaction $record) {
+                        // Check if it is a Donation
+                        if (str_starts_with($record->code, 'KURON-PEDULI')) {
+                             $record->update([
+                                'status' => 'approved',
+                            ]);
+                             \Filament\Notifications\Notification::make()
+                                ->title('Donation Accepted')
+                                ->body("Transaction marked as approved. No license generated.")
+                                ->success()
+                                ->send();
+                             return;
+                        }
+
                         // 1. Generate License with "KURON" Pattern
                         // Format: KURON-XXXX-XXXX-XXXX
                         $random = strtoupper(\Illuminate\Support\Str::random(12));
@@ -220,7 +233,7 @@ class TransactionResource extends Resource
                         // 2. Update Transaction
                         $record->update([
                             'status' => 'approved',
-                            'license_id' => $license->id,
+                            'license_id' => $license->id, // Consider making this nullable in DB if not already
                         ]);
 
                         // 3. Notify

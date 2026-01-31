@@ -22,6 +22,7 @@ class CheckoutController extends Controller
             // We authorize amount calculation on backend, but keep key for structure validation if needed
             'customer_contact' => 'required|string',
             'proof_digits' => 'required|string|max:5',
+            'amount' => 'nullable|numeric|min:1000', // For Donation
         ]);
 
         try {
@@ -29,8 +30,24 @@ class CheckoutController extends Controller
             $devices = $validated['device_quota'];
             $duration = $validated['duration_months'];
             $finalAmount = 0;
+            $customCode = null;
+            
+            // Checks
+            $isCampaign = \App\Models\DonationCampaign::where('title', $planName)->exists();
 
-            if ($planName === 'Ketengan') {
+            if ($planName === 'Donasi' || $isCampaign) {
+                // Donation Logic
+                if (empty($validated['amount'])) {
+                     throw new \Exception("Donation amount is required.");
+                }
+                $finalAmount = (int) $validated['amount'];
+                
+                // Generate KURON-PEDULI code
+                $date = now()->format('Ymd');
+                $random = strtoupper(\Illuminate\Support\Str::random(4));
+                $customCode = "KURON-PEDULI-{$date}-{$random}";
+
+            } elseif ($planName === 'Ketengan') {
                 // Logic Ketengan (Matches Frontend but Secure)
                 $basePrice = $settings->ketengan_base_price;
                 
@@ -64,7 +81,7 @@ class CheckoutController extends Controller
             }
 
             // Create Transaction with CALCULATED amount
-            $transaction = Transaction::create([
+            $transactionData = [
                 'plan_name' => $planName,
                 'device_quota' => $devices,
                 'duration_months' => $duration,
@@ -72,7 +89,13 @@ class CheckoutController extends Controller
                 'customer_contact' => $validated['customer_contact'],
                 'proof_digits' => $validated['proof_digits'],
                 'status' => 'pending',
-            ]);
+            ];
+
+            if ($customCode) {
+                $transactionData['code'] = $customCode;
+            }
+
+            $transaction = Transaction::create($transactionData);
 
             $transaction->refresh(); // Get the auto-generated code
 
