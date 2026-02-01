@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Filament\Resources\TransactionResource\RelationManagers;
 use App\Models\Transaction;
+use App\Filament\Resources\CustomerResource; // Added
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -70,12 +71,46 @@ class TransactionResource extends Resource
                             ->required()
                             ->numeric()
                             ->disabled(),
+                        Forms\Components\TextInput::make('original_price')
+                            ->label('Original Price (Before Discount)')
+                            ->prefix('IDR')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->formatStateUsing(fn (?Transaction $record) => $record ? ($record->amount + ($record->discount_amount ?? 0)) : 0),
+
+                        Forms\Components\TextInput::make('discount_amount')
+                            ->label('Discount Amount')
+                            ->numeric()
+                            ->prefix('IDR')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->visible(fn (?Transaction $record) => $record && $record->discount_amount > 0),
+
                         Forms\Components\TextInput::make('amount')
                             ->required()
                             ->numeric()
                             ->prefix('IDR')
-                            ->disabled(),
+                            ->disabled()
+                            ->label('Final Paid Amount'), // Updated Label
+                        
+                        Forms\Components\TextInput::make('voucher_code')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->visible(fn (?Transaction $record) => $record && !empty($record->voucher_code)),
                     ])->columns(2),
+
+                Forms\Components\Section::make('Payment Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('payment_method')
+                            ->label('Method')
+                            ->disabled()
+                            ->dehydrated(false),
+                        Forms\Components\Textarea::make('payment_details')
+                            ->label('Destination / Notes')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->columnSpanFull(),
+                    ])->collapsible(),
 
                 Forms\Components\Section::make('Status & License')
                     ->schema([
@@ -87,10 +122,9 @@ class TransactionResource extends Resource
                             ])
                             ->required()
                             ->native(false),
-                        Forms\Components\TextInput::make('license_id')
-                            ->numeric()
-                            ->disabled()
-                            ->label('Linked License ID'),
+                        Forms\Components\Placeholder::make('license_key')
+                            ->label('License Key')
+                            ->content(fn (Transaction $record): string => $record->license?->key ?? 'No License Generated'),
                     ])->columns(2),
             ]);
     }
@@ -108,12 +142,40 @@ class TransactionResource extends Resource
                     ->copyable()
                     ->fontFamily('mono')
                     ->weight('bold'),
-                Tables\Columns\TextColumn::make('customer_contact'),
+                Tables\Columns\TextColumn::make('customer.contact')
+                    ->label('Customer')
+                    ->searchable()
+                    ->sortable()
+                    ->description(fn (Transaction $record): string => $record->customer?->name ?? 'New Customer')
+                    ->action(
+                        Tables\Actions\Action::make('view_customer')
+                            ->url(fn (Transaction $record): ?string => $record->customer ? CustomerResource::getUrl('edit', ['record' => $record->customer]) : null)
+                            ->openUrlInNewTab()
+                    ),
+                Tables\Columns\TextColumn::make('payment_method')
+                    ->label('Payment Via')
+                    ->badge()
+                    ->color('info')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('plan_name')
                     ->searchable()
                     ->description(fn (Transaction $record): string => "{$record->device_quota} Devices • {$record->duration_months} Months"),
-                Tables\Columns\TextColumn::make('amount')
+                Tables\Columns\TextColumn::make('original_price')
+                    ->label('Original Price')
                     ->money('IDR')
+                    ->state(fn (Transaction $record) => $record->amount + ($record->discount_amount ?? 0))
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('discount_amount')
+                    ->label('Discount')
+                    ->money('IDR')
+                    ->sortable()
+                    ->placeholder('-')
+                    ->color(fn ($state) => $state > 0 ? 'success' : 'gray'),
+                Tables\Columns\TextColumn::make('amount')
+                    ->label('Final Paid')
+                    ->money('IDR')
+                    ->weight('bold')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -126,9 +188,15 @@ class TransactionResource extends Resource
                 Tables\Columns\TextColumn::make('proof_digits')
                     ->searchable()
                     ->label('Proof'),
-                Tables\Columns\TextColumn::make('license_id')
-                    ->numeric()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('license/voucher')
+                    ->label('Key / Voucher')
+                    ->state(function (Transaction $record) {
+                        $parts = [];
+                        if ($record->voucher_code) $parts[] = "V: {$record->voucher_code}";
+                        // if ($record->license) $parts[] = "L: ..."; // License is separate column usually or hidden
+                        return implode(' | ', $parts); 
+                    })
+                    ->placeholder('-'),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([

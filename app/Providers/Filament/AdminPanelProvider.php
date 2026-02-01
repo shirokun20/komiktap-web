@@ -24,6 +24,8 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
+            ->brandName('KomikTap Admin')
+            ->favicon('https://komiktap.info/wp-content/uploads/2020/09/cropped-LOGOa-192x192.png')
             ->id('admin')
             ->path('admin')
             ->login()

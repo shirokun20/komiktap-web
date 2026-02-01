@@ -775,8 +775,40 @@
 
                     <!-- Validation Input -->
                     <div class="bg-white/5 rounded-xl p-4 border border-white/10 text-left">
-                        <label class="block text-gray-400 text-xs mb-2">Konfirmasi Pembayaran</label>
+                        <!-- Voucher Code -->
+                        <div class="mb-3">
+                            <label class="block text-gray-400 text-xs mb-1">Kode Promo</label>
+                            <div class="flex gap-2">
+                                <div class="relative group flex-1">
+                                    <input type="text" id="voucherInput" placeholder="Masukkan Kode"
+                                        class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600 uppercase tracking-wider transition-all">
+                                    <i class="fas fa-ticket-alt absolute right-3 top-2.5 text-gray-600 group-hover:text-komik-primary transition-colors"></i>
+                                </div>
+                                <button type="button" onclick="checkVoucher()" id="btnCheckVoucher"
+                                    class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors border border-white/10">
+                                    Apply
+                                </button>
+                            </div>
+                            <p id="voucherMessage" class="text-[10px] mt-1 hidden"></p>
+                        </div>
 
+                        <!-- Price Summary -->
+                        <div id="priceSummary" class="hidden mb-4 p-3 bg-white/5 rounded-lg border border-white/10 text-sm">
+                            <div class="flex justify-between text-gray-400 mb-1">
+                                <span>Harga Normal</span>
+                                <span id="summaryOriginalPrice">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-green-400 mb-1 hidden" id="summaryDiscountRow">
+                                <span>Diskon <span id="summaryDiscountCode" class="text-[10px] bg-green-500/20 px-1 rounded ml-1"></span></span>
+                                <span id="summaryDiscountAmount">-Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-white font-bold pt-2 border-t border-white/10 mt-2">
+                                <span>Total Bayar</span>
+                                <span id="summaryFinalPrice">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <label class="block text-gray-400 text-xs mb-1">Konfirmasi Pesanan</label>
                         <input type="text" id="waInput" placeholder="Nomor WA / Email"
                             class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600 mb-3">
 
@@ -785,11 +817,10 @@
                                 class="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600">
                             <button id="submitBtn" onclick="submitOrder()"
                                 class="bg-komik-primary hover:bg-komik-primaryHover text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                Kirim
+                                Bayar
                             </button>
                         </div>
-                        <p class="text-[10px] text-gray-500 mt-2 italic">*Masukkan digit terakhir nomor referensi/struk
-                            untuk verifikasi.</p>
+                        <p class="text-[10px] text-gray-500 mt-2 italic">*Total bayar akan diverifikasi otomatis.</p>
                     </div>
 
                     <div class="flex items-center justify-center gap-2 text-xs text-gray-500 mt-6">
@@ -831,6 +862,11 @@
             const content = document.getElementById('qrisContent');
             const planLabel = document.getElementById('modalPlanName');
 
+            // Clear previous inputs
+            if(document.getElementById('voucherInput')) document.getElementById('voucherInput').value = '';
+            document.getElementById('waInput').value = '';
+            document.getElementById('proofInput').value = '';
+
             // Update State
             SELECTED_PLAN = {
                 name: name,
@@ -839,6 +875,10 @@
                 duration: duration,
                 type: type
             };
+
+            // Reset UI for new session
+            resetVoucherUI();
+
 
             if (name) {
                 const labels = document.querySelectorAll('.modalPlanNameDisplay');
@@ -850,6 +890,15 @@
                  const labels = document.querySelectorAll('.modalPlanNameDisplay');
                  labels.forEach(el => el.classList.add('hidden'));
             }
+
+            // Fetch Payment Methods based on Plan Type
+            // If plan name contains 'Donasi', assume donation? or rely on 'type' argument?
+            // Existing types: 'standard', 'custom'.
+            // If title is 'Donasi' or 'Campaign', treat as donation.
+            // For now, let's use 'order' for standard/custom, and 'donation' if name is Donasi.
+            
+            const methodType = (name === 'Donasi' || name.startsWith('Donasi')) ? 'donation' : 'order';
+            fetchPaymentMethods(methodType);
 
             modal.classList.remove('hidden');
             // Small delay to allow display:block to apply before opacity transition
@@ -931,7 +980,11 @@
             }
         }
 
+        let PAYMENT_METHODS = [];
+        let SELECTED_PAYMENT_INDEX = 0;
+
         function selectPaymentMethod(index) {
+            SELECTED_PAYMENT_INDEX = index;
             // Update Buttons
             document.querySelectorAll('.payment-method-btn').forEach(btn => {
                 btn.classList.remove('active', 'border-komik-primary', 'text-white', 'bg-komik-primary/10');
@@ -956,11 +1009,12 @@
             if(specificContent) specificContent.classList.remove('hidden');
         }
 
-        let PAYMENT_METHODS = [];
+        // Duplicate removed
 
-        async function fetchPaymentMethods() {
+
+        async function fetchPaymentMethods(type = 'all') {
             try {
-                const response = await fetch('/api/payment-methods');
+                const response = await fetch(`/api/payment-methods?type=${type}`);
                 const result = await response.json();
                 
                 if (result.status === 'success' && result.data.is_enabled) {
@@ -1100,8 +1154,124 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-             fetchPaymentMethods();
+             // Pre-fetch 'all' or don't fetch anything until modal opens?
+             // Maybe pre-fetch 'order' as it's most common
+             fetchPaymentMethods('all');
         });
+
+        async function checkVoucher() {
+            const codeInput = document.getElementById('voucherInput');
+            const msg = document.getElementById('voucherMessage');
+            const btn = document.getElementById('btnCheckVoucher');
+            
+            const code = codeInput.value.trim();
+            if (!code) return; // Do nothing if empty
+
+            // UI Loading
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            msg.classList.add('hidden');
+
+            try {
+                // Determine current amount based on selection
+                let currentAmount = SELECTED_PLAN.price;
+                if(SELECTED_PLAN.type === 'custom') {
+                    // Logic to get live price from slider if needed, but usually slider updates SELECTED_PLAN?
+                    // Wait, custom logic is inside submitOrder() usually re-calculated.
+                    // We need a helper to get current price for custom plan if not stored in SELECTED_PLAN yet.
+                    
+                    // Re-calculate custom price just in case
+                    const devices = parseInt(document.getElementById('deviceSlider').value);
+                    const months = parseInt(document.getElementById('monthSlider').value);
+                    // Use a helper function or assume `updatePrice()` updates global var or UI? 
+                    // `updatePrice()` updates `totalPriceDisplay`. Let's parse it or replicate logic.
+                    // Easiest is to trust `totalPriceDisplay` text content if formatted correctly, or re-calc using config.
+                    
+                    // Let's assume SELECTED_PLAN is updated OR use the displayed price for estimation
+                    // Actually `updatePrice` function (not shown in snippet but assumed exists) should update SELECTED_PLAN?
+                    // If not, let's grab from frontend display for now.
+                    // A safer bet is to grab the raw integer if stored, otherwise re-calculate.
+                    
+                    // For now, let's assume `calculateKetenganPrice` logic is available or we use API to get clean amount ? No, just frontend calc.
+                    // Let's rely on `SELECTED_PLAN.price` being updated when opening modal? 
+                    // No, Custom Plan updating happens in the slider page, NOT in the modal.
+                    // The modal is opened with `openQrisModal('Ketengan', calculatedPrice, ...)`
+                    // SO `SELECTED_PLAN.price` IS correct because it's passed when clicking "Beli Sekarang".
+                    currentAmount = SELECTED_PLAN.price;
+                }
+
+                const response = await fetch('/api/check-voucher', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        // If CSRF is needed:
+                        // 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        voucher_code: code,
+                        amount: currentAmount
+                    })
+                });
+
+                const result = await response.json();
+
+                msg.classList.remove('hidden');
+                // ApiResponse trait returns { status: 'success', data: ... }
+                // So result.success is undefined. Check result.status === 'success'
+                if (response.ok && result.status === 'success') {
+                    msg.innerHTML = `<span class="text-green-400"><i class="fas fa-check-circle"></i> ${result.data.message}</span>`;
+                    
+                    // Update Summary
+                    updatePriceSummary(currentAmount, result.data.discount_amount, result.data.final_amount, code);
+                    
+                } else {
+                    // Extract message from structure: result.data.message or result.message
+                    const errorMessage = result.data?.message || result.message || 'Kode tidak valid';
+                    msg.innerHTML = `<span class="text-red-400"><i class="fas fa-times-circle"></i> ${errorMessage}</span>`;
+                    updatePriceSummary(currentAmount, 0, currentAmount, null);
+                }
+
+            } catch (error) {
+                console.error(error);
+                msg.classList.remove('hidden');
+                msg.innerHTML = '<span class="text-red-400">Terjadi kesalahan sistem.</span>';
+            } finally {
+                btn.innerHTML = 'Apply';
+                btn.disabled = false;
+            }
+        }
+
+        function updatePriceSummary(original, discount, final, code) {
+            const summary = document.getElementById('priceSummary');
+            summary.classList.remove('hidden');
+
+            document.getElementById('summaryOriginalPrice').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(original);
+            
+            if (discount > 0) {
+                document.getElementById('summaryDiscountRow').classList.remove('hidden');
+                document.getElementById('summaryDiscountAmount').textContent = '-Rp ' + new Intl.NumberFormat('id-ID').format(discount);
+                document.getElementById('summaryDiscountCode').textContent = code;
+            } else {
+                document.getElementById('summaryDiscountRow').classList.add('hidden');
+            }
+
+            document.getElementById('summaryFinalPrice').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(final);
+        }
+
+        function resetVoucherUI() {
+            if(document.getElementById('voucherInput')) document.getElementById('voucherInput').value = '';
+            if(document.getElementById('voucherMessage')) document.getElementById('voucherMessage').classList.add('hidden');
+            if(document.getElementById('priceSummary')) document.getElementById('priceSummary').classList.add('hidden');
+            // We can optionally show summary with just original price
+             const summary = document.getElementById('priceSummary');
+             if(summary) {
+                 summary.classList.remove('hidden');
+                 document.getElementById('summaryOriginalPrice').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(SELECTED_PLAN.price);
+                 document.getElementById('summaryDiscountRow').classList.add('hidden');
+                 document.getElementById('summaryFinalPrice').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(SELECTED_PLAN.price);
+             }
+        }
 
         function closeQrisModal() {
             const modal = document.getElementById('qrisModal');
@@ -1118,6 +1288,7 @@
         async function submitOrder() {
             const wa = document.getElementById('waInput').value;
             const proof = document.getElementById('proofInput').value;
+            const voucher = document.getElementById('voucherInput') ? document.getElementById('voucherInput').value : '';
             const btn = document.getElementById('submitBtn');
 
             if (!wa || !proof) {
@@ -1143,10 +1314,24 @@
                 const priceText = document.getElementById('totalPrice').textContent;
                 amount = parseInt(priceText.replace(/[^0-9]/g, ''));
             }
+            // The instruction implies we should use SELECTED_PLAN directly for the payload,
+            // and the custom plan logic for `planName`, `devices`, `duration`, `amount`
+            // is no longer needed here as the payload will use SELECTED_PLAN directly.
+            // However, the instruction's payload uses SELECTED_PLAN.name, SELECTED_PLAN.devices, etc.
+            // which means the custom plan recalculation logic should still update SELECTED_PLAN
+            // or the payload should be constructed from the recalculated values.
+            // Given the instruction explicitly states `plan_name: SELECTED_PLAN.name`,
+            // `device_quota: SELECTED_PLAN.devices || 1`, etc., it suggests that SELECTED_PLAN
+            // should already hold the correct values, or the backend will handle defaults.
+            // Let's remove the custom plan recalculation block as per the instruction's implied payload structure.
 
             // Lock button
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            // Get selected payment method name
+            const selectedMethod = PAYMENT_METHODS[SELECTED_PAYMENT_INDEX];
+            const methodName = selectedMethod ? selectedMethod.name : '';
 
             try {
                 const response = await fetch('/api/checkout', {
@@ -1156,12 +1341,14 @@
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({
-                        plan_name: planName,
-                        device_quota: devices,
-                        duration_months: duration,
-                        amount: amount,
+                        plan_name: SELECTED_PLAN.name,
+                        device_quota: SELECTED_PLAN.devices || 1, // Default 1
+                        duration_months: SELECTED_PLAN.duration || 1, // Default 1
+                        amount: SELECTED_PLAN.price, // Trusting frontend amount for initial validation, backend re-calcs
                         customer_contact: wa,
-                        proof_digits: proof
+                        proof_digits: proof,
+                        voucher_code: voucher, // Include voucher code
+                        payment_method: methodName // Add Payment Method
                     })
                 });
 

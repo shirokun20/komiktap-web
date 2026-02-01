@@ -55,6 +55,15 @@ class PaymentConfiguration extends Page
                                     ->label('Account Number / VA'),
                                 TextInput::make('account_holder')
                                     ->label('Account Holder Name'),
+                                \Filament\Forms\Components\Select::make('usage_type')
+                                    ->label('Usage')
+                                    ->options([
+                                        'all' => 'All (Order & Donation)',
+                                        'order' => 'Order Only',
+                                        'donation' => 'Donation Only',
+                                    ])
+                                    ->default('all')
+                                    ->required(),
                                 Textarea::make('instructions')
                                     ->label('Payment Instructions')
                                     ->rows(2)
@@ -68,7 +77,8 @@ class PaymentConfiguration extends Page
                                     ->columnSpanFull(),
                             ])
                             ->columnSpanFull()
-                            ->reorderableWithButtons(),
+                            ->reorderableWithButtons()
+                            ->itemLabel(fn (array $state): ?string => ($state['name'] ?? 'New Method') . ' - ' . ucfirst($state['usage_type'] ?? 'All')),
                     ])->columns(2),
             ])
             ->statePath('data');

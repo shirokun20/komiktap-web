@@ -381,10 +381,12 @@
         }
 
         let PAYMENT_METHODS = [];
+        let SELECTED_PAYMENT_INDEX = 0;
 
         async function fetchPaymentMethods() {
             try {
-                const response = await fetch('/api/payment-methods');
+                // Fetch specifically for donation
+                const response = await fetch('/api/payment-methods?type=donation');
                 const result = await response.json();
                 if (result.status === 'success' && result.data.is_enabled) {
                     PAYMENT_METHODS = result.data.payment_methods || [];
@@ -482,6 +484,8 @@
         }
 
         function selectPaymentMethod(index) {
+            SELECTED_PAYMENT_INDEX = index; // Track selection
+            
             document.querySelectorAll('.payment-method-btn').forEach(btn => {
                 btn.classList.remove('active', 'border-komik-primary', 'text-white', 'bg-komik-primary/10');
                 btn.classList.add('text-gray-400', 'bg-white/5', 'border-white/10');
@@ -509,7 +513,6 @@
         function copyToClipboard(text) {
              navigator.clipboard.writeText(text).then(() => { 
                 const btn = document.activeElement;
-                 // Simple toast or visual feedback could be added here
                  alert('Disalin: ' + text);
              });
         }
@@ -521,6 +524,10 @@
 
             if (!proof) { alert('Mohon sertakan bukti transfer.'); return; }
 
+            // Get selected payment method name
+            const selectedMethod = PAYMENT_METHODS[SELECTED_PAYMENT_INDEX];
+            const methodName = selectedMethod ? selectedMethod.name : '';
+
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
@@ -530,7 +537,12 @@
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
                     body: JSON.stringify({
                         plan_name: CAMPAIGN_TITLE, 
-                        device_quota: 1, duration_months: 1, amount: SELECTED_AMOUNT, customer_contact: wa, proof_digits: proof
+                        device_quota: 1, 
+                        duration_months: 1, 
+                        amount: SELECTED_AMOUNT, 
+                        customer_contact: wa, 
+                        proof_digits: proof,
+                        payment_method: methodName // Include Payment Method
                     })
                 });
                 const result = await response.json();

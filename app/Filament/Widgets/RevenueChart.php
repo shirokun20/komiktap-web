@@ -16,7 +16,11 @@ class RevenueChart extends ChartWidget
     protected function getData(): array
     {
         // Manual aggregation to avoid requiring flowframe/laravel-trend
+        $campaignTitles = \App\Models\DonationCampaign::pluck('title')->toArray();
+
         $data = Transaction::where('status', 'approved')
+            ->where('plan_name', '!=', 'Donasi')
+            ->whereNotIn('plan_name', $campaignTitles)
             ->whereBetween('created_at', [now()->subDays(30), now()])
             ->selectRaw('DATE(created_at) as date, SUM(amount) as total')
             ->groupBy('date')

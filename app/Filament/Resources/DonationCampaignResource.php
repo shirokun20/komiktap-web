@@ -34,6 +34,18 @@ class DonationCampaignResource extends Resource
                     ->numeric()
                     ->prefix('IDR')
                     ->default(0),
+                
+                Forms\Components\Placeholder::make('collected_funds')
+                    ->label('Funds Collected')
+                    ->content(function (DonationCampaign $record) {
+                        // Calculate total approved transactions for this campaign
+                        $total = \App\Models\Transaction::where('plan_name', $record->title)
+                            ->where('status', 'approved')
+                            ->sum('amount');
+                        return 'IDR ' . number_format($total, 0, ',', '.');
+                    })
+                    ->visible(fn ($record) => $record !== null), // Only show on edit
+
                 Forms\Components\Toggle::make('is_active')
                     ->required()
                     ->default(true),

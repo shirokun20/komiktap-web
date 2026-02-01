@@ -23,6 +23,8 @@ class CheckoutController extends Controller
             'customer_contact' => 'required|string',
             'proof_digits' => 'required|string|max:5',
             'amount' => 'nullable|numeric|min:1000', // For Donation
+            'voucher_code' => 'nullable|string',
+            'payment_method' => 'required|string', // Name of the selected method
         ]);
 
         if ($validator->fails()) {
@@ -37,6 +39,30 @@ class CheckoutController extends Controller
             $duration = $validated['duration_months'];
             $finalAmount = 0;
             $customCode = null;
+            
+            // Payment Method Logic
+            $paymentMethodName = $validated['payment_method'];
+            $paymentSettings = app(\App\Settings\PaymentSettings::class);
+            $selectedMethod = collect($paymentSettings->payment_methods)
+                ->firstWhere('name', $paymentMethodName);
+
+            if (!$selectedMethod) {
+                // Fallback or Error? Let's verify instructions exist
+                 throw new \Exception("Invalid payment method selected.");
+            }
+
+            // Format Payment Details for storage
+            $details = "";
+            if (!empty($selectedMethod['account_number'])) {
+                $details .= "No: " . $selectedMethod['account_number'];
+            }
+            if (!empty($selectedMethod['account_holder'])) {
+                $details .= " (" . $selectedMethod['account_holder'] . ")";
+            }
+            // Instructions not saved to DB anymore to keep invoice clean
+            // if (!empty($selectedMethod['instructions'])) {
+            //    $details .= "\nNotes: " . strip_tags($selectedMethod['instructions']);
+            // }
             
             // Checks
             $isCampaign = \App\Models\DonationCampaign::where('title', $planName)->exists();
@@ -86,15 +112,49 @@ class CheckoutController extends Controller
                 $finalAmount = $plan->price * $duration;
             }
 
+            // Voucher Logic
+            $discountAmount = 0;
+            $voucherCodeToUse = null;
+
+            if (!empty($validated['voucher_code'])) {
+                $voucher = \App\Models\Voucher::where('code', $validated['voucher_code'])->first();
+
+                if (!$voucher || !$voucher->isValid()) {
+                    throw new \Exception("Voucher code invalid or expired.");
+                }
+
+                $voucherCodeToUse = $voucher->code;
+
+                if ($voucher->type === 'fixed') {
+                    $discountAmount = $voucher->amount;
+                } else {
+                    $discountAmount = $finalAmount * ($voucher->amount / 100);
+                }
+                
+                // Prevent negative amount
+                if ($discountAmount > $finalAmount) {
+                     $discountAmount = $finalAmount;
+                }
+
+                $finalAmount -= $discountAmount;
+                
+                // Increment Usage
+                $voucher->increment('usage_count');
+            }
+
             // Create Transaction with CALCULATED amount
             $transactionData = [
                 'plan_name' => $planName,
                 'device_quota' => $devices,
                 'duration_months' => $duration,
-                'amount' => $finalAmount, // Secure Amount
+                'amount' => max(0, $finalAmount), // Ensure non-negative
                 'customer_contact' => $validated['customer_contact'],
                 'proof_digits' => $validated['proof_digits'],
                 'status' => 'pending',
+                'voucher_code' => $voucherCodeToUse,
+                'discount_amount' => $discountAmount,
+                'payment_method' => $paymentMethodName, // From validated
+                'payment_details' => $details, // Formatted string
             ];
 
             if ($customCode) {
@@ -105,15 +165,20 @@ class CheckoutController extends Controller
 
             $transaction->refresh(); // Get the auto-generated code
 
+            $message = 'Order received successfully!';
+            if ($voucherCodeToUse) {
+                $message .= " Voucher applied: Save IDR " . number_format($discountAmount);
+            }
+
             return $this->success([
                 'transaction_id' => $transaction->id,
                 'transaction_code' => $transaction->code,
-                'message' => 'Order received successfully!'
+                'message' => $message
             ]);
 
         } catch (\Exception $e) {
             Log::error('Checkout Error: ' . $e->getMessage());
-            return $this->error('Failed to process order. ' . $e->getMessage(), 500);
+            return $this->error($e->getMessage(), 400); // Return 400 for bad request logic
         }
     }
 }

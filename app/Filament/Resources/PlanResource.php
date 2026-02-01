@@ -23,6 +23,20 @@ class PlanResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Price' => 'IDR ' . number_format($record->price, 0, ',', '.'),
+        ];
+    }
+
     public static function form(Form $form): Form
     {
         return $form

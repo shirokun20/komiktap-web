@@ -1,5 +1,12 @@
 <?php
 
+$app_url = env('APP_URL', 'http://localhost');
+
+if (isset($_SERVER['HTTP_HOST'])) {
+    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+    $app_url = $protocol . '://' . $_SERVER['HTTP_HOST'];
+}
+
 return [
 
     /*
@@ -52,7 +59,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => $app_url,
 
     /*
     |--------------------------------------------------------------------------

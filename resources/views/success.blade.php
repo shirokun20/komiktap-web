@@ -71,6 +71,19 @@
                 <span class="text-gray-500">Plan</span>
                 <span class="text-white font-medium text-lg">{{ $transaction->plan_name }}</span>
             </div>
+            
+            @if($transaction->discount_amount > 0)
+            <div class="flex justify-between items-center text-sm md:text-base">
+                <span class="text-gray-500">Discount ({{ $transaction->voucher_code }})</span>
+                <span class="text-green-500 font-medium">- IDR {{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
+            </div>
+            @endif
+
+            <div class="flex justify-between items-center text-sm md:text-base">
+                <span class="text-gray-500">Total Paid</span>
+                <span class="text-white font-bold text-lg">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</span>
+            </div>
+
              <div class="flex justify-between items-center text-sm md:text-base">
                 <span class="text-gray-500">Status</span>
                 <span class="bg-yellow-500/10 text-yellow-500 text-xs md:text-sm px-3 py-1 rounded-lg font-bold uppercase tracking-wide">Pending</span>

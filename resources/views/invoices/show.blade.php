@@ -24,6 +24,22 @@
             <p class="text-gray-600">{{ $transaction->customer_contact }}</p>
         </div>
 
+        @if($transaction->payment_method)
+        <div class="mb-8">
+            <h3 class="text-gray-700 font-bold mb-2">Payment Method:</h3>
+            <p class="text-gray-800 font-medium">{{ $transaction->payment_method }}</p>
+            @if($transaction->payment_details)
+                @php
+                    // Filter out "Notes:" section if present
+                    $details = $transaction->payment_details;
+                    $parts = explode('Notes:', $details);
+                    $cleanDetails = trim($parts[0]);
+                @endphp
+                <p class="text-gray-500 text-sm whitespace-pre-line">{{ $cleanDetails }}</p>
+            @endif
+        </div>
+        @endif
+
         <table class="w-full mb-8">
             <thead>
                 <tr class="bg-gray-50 border-b">
@@ -37,11 +53,28 @@
                         {{ $transaction->plan_name }}<br>
                         <span class="text-xs text-gray-500">{{ $transaction->device_quota }} Device(s), {{ $transaction->duration_months }} Months</span>
                     </td>
-                    <td class="text-right p-3 text-gray-700">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</td>
+                    <td class="text-right p-3 text-gray-700">
+                        @php
+                            $subtotal = $transaction->amount + ($transaction->discount_amount ?? 0);
+                        @endphp
+                        IDR {{ number_format($subtotal, 0, ',', '.') }}
+                    </td>
                 </tr>
+
+                @if($transaction->discount_amount > 0)
+                <tr class="border-b bg-green-50/50">
+                    <td class="p-3 text-green-700">
+                        Discount ({{ $transaction->voucher_code }})
+                    </td>
+                    <td class="text-right p-3 text-green-700">
+                        - IDR {{ number_format($transaction->discount_amount, 0, ',', '.') }}
+                    </td>
+                </tr>
+                @endif
+
                 <!-- Total -->
                 <tr>
-                    <td class="p-3 text-right font-bold text-gray-800">Total</td>
+                    <td class="p-3 text-right font-bold text-gray-800">Total Paid</td>
                     <td class="p-3 text-right font-bold text-gray-800">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</td>
                 </tr>
             </tbody>
