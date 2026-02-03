@@ -69,11 +69,18 @@ class LicenseController extends Controller
             ]);
         }
 
+        // 5. Get Plan Name
+        $transaction = $license->transactions()
+            ->where('status', 'approved')
+            ->latest()
+            ->first();
+
         return $this->success([
             'valid' => true,
             'expires_at' => $license->expires_at ? $license->expires_at->toDateTimeString() : null,
             'max_devices' => $license->max_devices,
             'used_devices' => $license->devices()->count(),
+            'plan_name' => $transaction ? $transaction->plan_name : null,
             'message' => 'License active'
         ]);
     }

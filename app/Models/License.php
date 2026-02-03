@@ -34,4 +34,9 @@ class License extends Model
     {
         return $this->hasMany(LicenseDevice::class);
     }
+
+    public function transactions()
+    {
+        return $this->hasMany(\App\Models\Transaction::class);
+    }
 }
