@@ -13,3 +13,4 @@ Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'stor
 Route::post('/check-voucher', [\App\Http\Controllers\ApiController::class, 'checkVoucher']);
 Route::post('/check-license', [\App\Http\Controllers\LicenseController::class, 'check']);
 Route::post('/error-report', [\App\Http\Controllers\Api\ErrorReportController::class, 'store']);
+Route::get('/check-update', [\App\Http\Controllers\Api\VersionController::class, 'check']);

@@ -106,7 +106,13 @@
                             </a>
                             <div class="text-center">
                                 <p class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Size</p>
-                                <p class="text-sm text-gray-300 font-mono">{{ number_format(Storage::disk('public')->size($apk->file_path) / 1024 / 1024, 2) }} MB</p>
+                                <p class="text-sm text-gray-300 font-mono">
+                                    @if(Storage::disk('public')->exists($apk->file_path))
+                                        {{ number_format(Storage::disk('public')->size($apk->file_path) / 1024 / 1024, 2) }} MB
+                                    @else
+                                        Unknown
+                                    @endif
+                                </p>
                             </div>
                             <div class="text-center">
                                 <p class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Total Downloads</p>
