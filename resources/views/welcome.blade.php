@@ -190,7 +190,7 @@
                         <span
                             class="absolute bottom-0 left-0 w-0 h-0.5 bg-komik-primary group-hover/link:w-full transition-all duration-300"></span>
                     </a>
-                    <a href="#"
+                    <a href="https://komiktap.info/"
                         class="text-gray-300 hover:text-white font-medium text-sm tracking-wide relative group/link py-2">
                         Daftar Komik
                         <span
