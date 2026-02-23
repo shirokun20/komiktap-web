@@ -334,6 +334,19 @@
         </div>
     </div>
 
+    <!-- Image Zoom Modal -->
+    <div id="imageZoomModal" class="fixed inset-0 z-[80] hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/95 backdrop-blur-sm" onclick="closeImageZoom()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl p-4">
+            <button onclick="closeImageZoom()" class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <div class="flex items-center justify-center">
+                <img id="zoomedImage" src="" alt="QRIS Code" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl">
+            </div>
+        </div>
+    </div>
+
     <script>
         let SELECTED_AMOUNT = 0;
         let CAMPAIGN_TITLE = '{{ $campaign->title }}';
@@ -425,6 +438,24 @@
             }, 300);
         }
 
+        function openImageZoom(imageUrl) {
+            const modal = document.getElementById('imageZoomModal');
+            const img = document.getElementById('zoomedImage');
+            img.src = imageUrl;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        function closeImageZoom() {
+            const modal = document.getElementById('imageZoomModal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
         let PAYMENT_METHODS = [];
         let SELECTED_PAYMENT_INDEX = 0;
 
@@ -500,9 +531,10 @@
                     ` : ''}
 
                     ${qrisUrl ? `
-                    <div class="p-2 bg-white rounded-xl mx-auto max-w-[200px] mb-6 shadow-lg shadow-white/5">
+                    <div class="p-2 bg-white rounded-xl mx-auto max-w-[200px] mb-6 shadow-lg shadow-white/5 cursor-pointer hover:shadow-komik-primary/20 hover:scale-105 transition-all" onclick="openImageZoom('${qrisUrl}')" title="Klik untuk memperbesar">
                         <img src="${qrisUrl}" alt="QRIS Code" class="w-full h-auto rounded-lg">
                     </div>
+                    <p class="text-xs text-center text-gray-500 mb-4"><i class="fas fa-search-plus"></i> Klik gambar untuk memperbesar</p>
                     ` : ''}
 
                     <div class="text-center">
