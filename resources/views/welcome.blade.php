@@ -97,23 +97,28 @@
             position: relative;
             overflow: hidden;
         }
+
         .payment-instructions ul {
             list-style-type: disc;
             padding-left: 1.2rem;
             margin-bottom: 0.5rem;
         }
+
         .payment-instructions ol {
             list-style-type: decimal;
             padding-left: 1.2rem;
             margin-bottom: 0.5rem;
         }
+
         .payment-instructions li {
             margin-bottom: 0.25rem;
         }
+
         .payment-instructions strong {
             color: white;
             font-weight: 600;
         }
+
         .btn-primary:active {
             transform: scale(0.98);
         }
@@ -405,7 +410,7 @@
                             </div>
                         </div>
 
-                        <button onclick="openQrisModal('Ketengan', 0, 0, 0, 'custom')"
+                        <button id="checkoutKetenganBtn"
                             class="w-full py-4 rounded-xl btn-primary font-bold text-lg shadow-lg hover:shadow-komik-primary/40 transition-all flex items-center justify-center gap-2">
                             <span>Checkout Paket Ketengan</span>
                             <i class="fas fa-arrow-right"></i>
@@ -668,7 +673,7 @@
                                 ${parseDesc(plan.description)}
                             </div>
 
-                            <button onclick="openQrisModal('${plan.name}', ${plan.price}, ${plan.max_devices}, ${plan.duration_months}, 'standard')"
+                            <button onclick="goToPayment('${plan.name}', ${plan.price}, ${plan.max_devices}, ${plan.duration_months})"
                                 class="w-full py-4 rounded-xl btn-primary font-bold shadow-lg shadow-komik-primary/25 hover:shadow-komik-primary/50 transition-all transform hover:scale-[1.02]">
                                 Beli Paket ${plan.name}
                             </button>
@@ -686,7 +691,7 @@
                                 ${parseDesc(plan.description)}
                             </div>
 
-                            <button onclick="openQrisModal('${plan.name}', ${plan.price}, ${plan.max_devices}, ${plan.duration_months}, 'standard')"
+                            <button onclick="goToPayment('${plan.name}', ${plan.price}, ${plan.max_devices}, ${plan.duration_months})"
                                 class="block w-full py-3 rounded-xl border border-white/20 hover:bg-white/10 text-white text-center transition-all font-medium">
                                 Pilih Paket ${plan.name}
                             </button>
@@ -747,668 +752,30 @@
             fetchPlans(); // Load plans async
             fetchFaqs(); // Load FAQs async
             updatePrice(); // Show initial state immediately
-        });
-    </script>
 
-    <!-- QRIS Modal for Pricing -->
-    <div id="qrisModal" class="fixed inset-0 z-[60] hidden opacity-0 transition-opacity duration-300">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeQrisModal()"></div>
-
-        <!-- Modal Content -->
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl p-4">
-            <div class="glass-card bg-[#1a1a1a] border border-white/10 rounded-3xl p-6 relative shadow-2xl scale-95 transition-transform duration-300 transform"
-                id="qrisContent">
-                <button onclick="closeQrisModal()"
-                    class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
-                    <i class="fas fa-times"></i>
-                </button>
-
-                    <h3 class="text-xl font-bold text-white mb-4">Pilih Metode Pembayaran</h3>
-
-                    <!-- Payment Method Tabs -->
-                    <div class="flex flex-wrap gap-2 justify-center mb-6" id="paymentMethodsContainer">
-                        <!-- Populated by JS -->
-                        <div class="w-full text-center py-4">
-                            <i class="fas fa-circle-notch fa-spin text-komik-primary"></i>
-                        </div>
-                    </div>
-
-                    <!-- Payment Details Container -->
-                    <div id="paymentDetailsContainer">
-                        <!-- Populated by JS -->
-                    </div>
-
-                    <!-- Validation Input -->
-                    <div class="bg-white/5 rounded-xl p-4 border border-white/10 text-left">
-                        <!-- Voucher Code -->
-                        <div class="mb-3">
-                            <label class="block text-gray-400 text-xs mb-1">Kode Promo</label>
-                            <div class="flex gap-2">
-                                <div class="relative group flex-1">
-                                    <input type="text" id="voucherInput" placeholder="Masukkan Kode"
-                                        class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600 uppercase tracking-wider transition-all">
-                                    <i class="fas fa-ticket-alt absolute right-3 top-2.5 text-gray-600 group-hover:text-komik-primary transition-colors"></i>
-                                </div>
-                                <button type="button" onclick="checkVoucher()" id="btnCheckVoucher"
-                                    class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors border border-white/10">
-                                    Apply
-                                </button>
-                            </div>
-                            <p id="voucherMessage" class="text-[10px] mt-1 hidden"></p>
-                        </div>
-
-                        <!-- Price Summary -->
-                        <div id="priceSummary" class="hidden mb-4 p-3 bg-white/5 rounded-lg border border-white/10 text-sm">
-                            <div class="flex justify-between text-gray-400 mb-1">
-                                <span>Harga Normal</span>
-                                <span id="summaryOriginalPrice">Rp 0</span>
-                            </div>
-                            <div class="flex justify-between text-green-400 mb-1 hidden" id="summaryDiscountRow">
-                                <span>Diskon <span id="summaryDiscountCode" class="text-[10px] bg-green-500/20 px-1 rounded ml-1"></span></span>
-                                <span id="summaryDiscountAmount">-Rp 0</span>
-                            </div>
-                            <div class="flex justify-between text-white font-bold pt-2 border-t border-white/10 mt-2">
-                                <span>Total Bayar</span>
-                                <span id="summaryFinalPrice">Rp 0</span>
-                            </div>
-                        </div>
-
-                        <label class="block text-gray-400 text-xs mb-1">Konfirmasi Pesanan</label>
-                        <input type="text" id="waInput" placeholder="Nomor WA / Email"
-                            class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600 mb-3">
-
-                        <div class="flex gap-2">
-                            <input type="text" id="proofInput" placeholder="3-5 Digit Terakhir Bukti Transfer"
-                                class="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-komik-primary/50 placeholder-gray-600">
-                            <button id="submitBtn" onclick="submitOrder()"
-                                class="bg-komik-primary hover:bg-komik-primaryHover text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                Bayar
-                            </button>
-                        </div>
-                        <p class="text-[10px] text-gray-500 mt-2 italic">*Total bayar akan diverifikasi otomatis.</p>
-                    </div>
-
-                    <div class="flex items-center justify-center gap-2 text-xs text-gray-500 mt-6">
-                        <i class="fas fa-check-circle text-komik-primary"></i>
-                        <span>Verified Merchant</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Instructions Modal -->
-    <div id="instructionsModal" class="fixed inset-0 z-[70] hidden opacity-0 transition-opacity duration-300">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeInstructionsModal()"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg p-4">
-             <div class="glass-card bg-[#1a1a1a] border border-white/10 rounded-3xl p-6 relative shadow-2xl scale-95 transition-transform duration-300 transform" id="instructionsModalContent">
-                <button onclick="closeInstructionsModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
-                    <i class="fas fa-times"></i>
-                </button>
-                <h3 class="text-lg font-bold text-white mb-4">Petunjuk Pembayaran</h3>
-                <div class="text-gray-300 text-sm payment-instructions max-h-[60vh] overflow-y-auto" id="instructionsContentBody">
-                    <!-- Content populated by JS -->
-                </div>
-             </div>
-        </div>
-    </div>
-
-    <!-- Image Zoom Modal -->
-    <div id="imageZoomModal" class="fixed inset-0 z-[80] hidden opacity-0 transition-opacity duration-300">
-        <div class="absolute inset-0 bg-black/95 backdrop-blur-sm" onclick="closeImageZoom()"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl p-4">
-            <button onclick="closeImageZoom()" class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-            <div class="flex items-center justify-center">
-                <img id="zoomedImage" src="" alt="QRIS Code" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl">
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let SELECTED_PLAN = {
-            name: '',
-            price: 0,
-            devices: 0,
-            duration: 0,
-            type: 'standard' // 'standard' or 'custom'
-        };
-
-        function openQrisModal(name, price, devices, duration, type) {
-            const modal = document.getElementById('qrisModal');
-            const content = document.getElementById('qrisContent');
-            const planLabel = document.getElementById('modalPlanName');
-
-            // Clear previous inputs
-            if(document.getElementById('voucherInput')) document.getElementById('voucherInput').value = '';
-            document.getElementById('waInput').value = '';
-            document.getElementById('proofInput').value = '';
-
-            // Update State
-            SELECTED_PLAN = {
-                name: name,
-                price: price,
-                devices: devices,
-                duration: duration,
-                type: type
-            };
-
-            // Reset UI for new session
-            resetVoucherUI();
-
-
-            if (name) {
-                const labels = document.querySelectorAll('.modalPlanNameDisplay');
-                labels.forEach(el => {
-                     el.textContent = 'Pembayaran Paket ' + name;
-                     el.classList.remove('hidden');
-                });
-            } else {
-                 const labels = document.querySelectorAll('.modalPlanNameDisplay');
-                 labels.forEach(el => el.classList.add('hidden'));
+            // Wire Ketengan checkout button
+            const ketenganBtn = document.getElementById('checkoutKetenganBtn');
+            if (ketenganBtn) {
+                ketenganBtn.onclick = function() {
+                    const devices = parseInt(slider.value);
+                    const duration = currentDuration;
+                    // Parse the displayed final price
+                    const rawPrice = priceDisplay.textContent.replace(/[^0-9]/g, '');
+                    const amount = parseInt(rawPrice) || 0;
+                    goToPayment('Ketengan', amount, devices, duration);
+                };
             }
-
-            // Fetch Payment Methods based on Plan Type
-            // If plan name contains 'Donasi', assume donation? or rely on 'type' argument?
-            // Existing types: 'standard', 'custom'.
-            // If title is 'Donasi' or 'Campaign', treat as donation.
-            // For now, let's use 'order' for standard/custom, and 'donation' if name is Donasi.
-            
-            const methodType = (name === 'Donasi' || name.startsWith('Donasi')) ? 'donation' : 'order';
-            fetchPaymentMethods(methodType);
-
-            modal.classList.remove('hidden');
-            // Small delay to allow display:block to apply before opacity transition
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                content.classList.remove('scale-95');
-                content.classList.add('scale-100');
-            }, 10);
-        }
-
-        function openInstructionsModal(index) {
-            const content = document.getElementById(`instructions-data-${index}`).innerHTML;
-            const modal = document.getElementById('instructionsModal');
-            const body = document.getElementById('instructionsContentBody');
-            
-            body.innerHTML = content;
-            modal.classList.remove('hidden');
-            // Small delay to allow display:block to apply before opacity transition
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                document.getElementById('instructionsModalContent').classList.remove('scale-95');
-                 document.getElementById('instructionsModalContent').classList.add('scale-100');
-            }, 10);
-        }
-
-        function closeInstructionsModal() {
-             const modal = document.getElementById('instructionsModal');
-             modal.classList.add('opacity-0');
-             document.getElementById('instructionsModalContent').classList.remove('scale-100');
-             document.getElementById('instructionsModalContent').classList.add('scale-95');
-             setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        function openImageZoom(imageUrl) {
-            const modal = document.getElementById('imageZoomModal');
-            const img = document.getElementById('zoomedImage');
-            img.src = imageUrl;
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-            }, 10);
-        }
-
-        function closeImageZoom() {
-            const modal = document.getElementById('imageZoomModal');
-            modal.classList.add('opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        function copyToClipboard(text) {
-            console.log(text);
-            if (!text) return;
-
-            // Try modern API first
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(() => {
-                    alert('Nomor berhasil disalin!');
-                }).catch(err => {
-                    console.error('Clipboard API Error:', err);
-                    fallbackCopyToClipboard(text);
-                });
-            } else {
-                fallbackCopyToClipboard(text);
-            }
-        }
-
-        function fallbackCopyToClipboard(text) {
-            try {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                
-                // Ensure it's not visible but part of the document
-                textArea.style.position = "fixed";
-                textArea.style.left = "-9999px";
-                textArea.style.top = "0";
-                textArea.style.opacity = "0";
-                document.body.appendChild(textArea);
-                
-                textArea.focus();
-                textArea.select();
-                
-                const successful = document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                if (successful) {
-                    alert('Nomor berhasil disalin!');
-                } else {
-                    throw new Error('execCommand returned false');
-                }
-            } catch (err) {
-                console.error('Fallback Copy Error:', err);
-                alert('Gagal menyalin nomor. Silakan salin secara manual.');
-            }
-        }
-
-        let PAYMENT_METHODS = [];
-        let SELECTED_PAYMENT_INDEX = 0;
-
-        function selectPaymentMethod(index) {
-            SELECTED_PAYMENT_INDEX = index;
-            // Update Buttons
-            document.querySelectorAll('.payment-method-btn').forEach(btn => {
-                btn.classList.remove('active', 'border-komik-primary', 'text-white', 'bg-komik-primary/10');
-                btn.classList.add('text-gray-400', 'bg-white/5', 'border-white/10');
-                
-                if(parseInt(btn.dataset.index) === index) {
-                    btn.classList.add('active', 'border-komik-primary', 'text-white', 'bg-komik-primary/10');
-                    btn.classList.remove('text-gray-400', 'bg-white/5', 'border-white/10');
-                }
-            });
-
-            // Show Content
-            document.querySelectorAll('.payment-detail-content').forEach(el => el.classList.add('hidden'));
-            
-            // Hide Placeholder
-            const placeholder = document.getElementById('payment-placeholder');
-            if(placeholder) placeholder.classList.add('hidden');
-
-            // Use querySelector to find the specific element id that starts with payment-detail-{index}
-            // Actually ID is unique, so:
-            const specificContent = document.getElementById(`payment-detail-${index}`);
-            if(specificContent) specificContent.classList.remove('hidden');
-        }
-
-        // Duplicate removed
-
-
-        async function fetchPaymentMethods(type = 'all') {
-            try {
-                const response = await fetch(`/api/payment-methods?type=${type}`);
-                const result = await response.json();
-                
-                if (result.status === 'success' && result.data.is_enabled) {
-                    PAYMENT_METHODS = result.data.payment_methods || [];
-                    renderPaymentMethods();
-                } else {
-                     // Handle disabled or error case if needed
-                     const tabsContainer = document.getElementById('paymentMethodsContainer');
-                     tabsContainer.innerHTML = '<div class="w-full text-center py-4 text-gray-500">Metode pembayaran tidak tersedia saat ini.</div>';
-                }
-            } catch (error) {
-                console.error('Error fetching payment methods:', error);
-            }
-        }
-
-        function renderPaymentMethods() {
-            const tabsContainer = document.getElementById('paymentMethodsContainer');
-            const detailsContainer = document.getElementById('paymentDetailsContainer');
-            
-            if (PAYMENT_METHODS.length === 0) {
-                tabsContainer.innerHTML = '';
-                detailsContainer.innerHTML = '<div class="text-center py-6"><p class="text-gray-500">Belum ada metode pembayaran yang tersedia.</p></div>';
-                return;
-            }
-
-            // Render Tabs
-            tabsContainer.innerHTML = PAYMENT_METHODS.map((method, index) => `
-                <button onclick="selectPaymentMethod(${index})" 
-                        class="payment-method-btn px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-gray-400 hover:text-white hover:border-komik-primary hover:bg-komik-primary/10 transition-all"
-                        data-index="${index}">
-                    ${method.name}
-                </button>
-            `).join('');
-
-            // Render Details
-            let detailsHtml = PAYMENT_METHODS.map((method, index) => {
-                const instructions = method.instructions || '';
-                const qrisUrl = method.qris_image_path ? `/storage/${method.qris_image_path}` : null;
-
-                return `
-                <div class="payment-detail-content hidden" id="payment-detail-${index}">
-                    <div class="flex items-center gap-4 mb-6 bg-white/5 p-4 rounded-2xl border border-white/10">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-komik-primary to-orange-600 flex items-center justify-center text-white shadow-lg shadow-komik-primary/20 shrink-0">
-                            <i class="fas fa-wallet text-lg"></i>
-                        </div>
-                        <div class="text-left">
-                            <h3 class="text-lg font-bold text-white leading-tight">${method.name}</h3>
-                            <div class="inline-flex items-center gap-1.5 mt-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                                <p class="text-gray-400 text-xs font-medium modalPlanNameDisplay">Akses Premium</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    ${method.account_number ? `
-                    <div class="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-4 mb-4 border border-white/10 relative overflow-hidden group" onclick="copyToClipboard('${method.account_number}')">
-                        <div class="absolute inset-0 bg-komik-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <p class="text-xs text-gray-500 mb-1 font-medium tracking-wide">NOMOR REKENING / VA</p>
-                        <div class="text-2xl font-mono font-bold text-white tracking-widest flex items-center justify-between gap-2 group-hover:text-komik-primary transition-colors cursor-pointer">
-                            <span>${method.account_number}</span>
-                            <i class="fas fa-copy text-sm text-gray-600 group-hover:text-komik-primary transition-colors"></i>
-                        </div>
-                        <p class="text-xs text-gray-400 mt-2 font-medium uppercase tracking-wider flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-komik-primary"></span>
-                            ${method.account_holder || ''}
-                        </p>
-                    </div>
-                    ` : ''}
-
-                    ${qrisUrl ? `
-                    <div class="p-2 bg-white rounded-xl mx-auto max-w-[200px] mb-6 shadow-lg shadow-white/5 cursor-pointer hover:shadow-komik-primary/20 hover:scale-105 transition-all" onclick="openImageZoom('${qrisUrl}')" title="Klik untuk memperbesar">
-                        <img src="${qrisUrl}" alt="QRIS Code" class="w-full h-auto rounded-lg">
-                    </div>
-                    <p class="text-xs text-center text-gray-500 mb-4"><i class="fas fa-search-plus"></i> Klik gambar untuk memperbesar</p>
-                    ` : ''}
-
-                    <div class="text-center">
-                        <button onclick="openInstructionsModal('${index}')" class="text-sm text-komik-primary hover:text-white underline decoration-dashed underline-offset-4 transition-colors">
-                            Lihat Cara Pembayaran
-                        </button>
-                    </div>
-
-                    <!-- Hidden Instructions Data -->
-                    <div id="instructions-data-${index}" class="hidden">
-                        ${instructions}
-                    </div>
-                    <br>
-                </div>
-                `;
-            }).join('');
-
-            // Add Placeholder
-            detailsHtml += `
-                <div id="payment-placeholder" class="text-center py-12 px-6">
-                    <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-gray-600 mx-auto mb-4 border border-white/5">
-                        <i class="fas fa-mouse-pointer text-2xl"></i>
-                    </div>
-                    <h4 class="text-white font-bold mb-2">Pilih Metode Pembayaran</h4>
-                    <p class="text-gray-500 text-sm">Silakan pilih salah satu metode di atas untuk melihat detail pembayaran.</p>
-                </div>
-            `;
-
-            detailsContainer.innerHTML = detailsHtml;
-            
-            // Re-apply current plan name if modal is open
-            if(SELECTED_PLAN.name) {
-                 const labels = document.querySelectorAll('.modalPlanNameDisplay');
-                 labels.forEach(el => {
-                      el.textContent = 'Pembayaran Paket ' + SELECTED_PLAN.name;
-                      el.classList.remove('hidden');
-                 });
-            }
-        }
-
-        function openInstructionsModal(index) {
-            const content = document.getElementById(`instructions-data-${index}`).innerHTML;
-            const modal = document.getElementById('instructionsModal');
-            const body = document.getElementById('instructionsContentBody');
-            
-            body.innerHTML = content;
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                document.getElementById('instructionsModalContent').classList.remove('scale-95');
-                 document.getElementById('instructionsModalContent').classList.add('scale-100');
-            }, 10);
-        }
-
-        function closeInstructionsModal() {
-             const modal = document.getElementById('instructionsModal');
-             modal.classList.add('opacity-0');
-             document.getElementById('instructionsModalContent').classList.remove('scale-100');
-             document.getElementById('instructionsModalContent').classList.add('scale-95');
-             setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-             // Pre-fetch 'all' or don't fetch anything until modal opens?
-             // Maybe pre-fetch 'order' as it's most common
-             fetchPaymentMethods('all');
         });
 
-        async function checkVoucher() {
-            const codeInput = document.getElementById('voucherInput');
-            const msg = document.getElementById('voucherMessage');
-            const btn = document.getElementById('btnCheckVoucher');
-            
-            const code = codeInput.value.trim();
-            if (!code) return; // Do nothing if empty
-
-            // UI Loading
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            btn.disabled = true;
-            msg.classList.add('hidden');
-
-            try {
-                // Determine current amount based on selection
-                let currentAmount = SELECTED_PLAN.price;
-                if(SELECTED_PLAN.type === 'custom') {
-                    // Logic to get live price from slider if needed, but usually slider updates SELECTED_PLAN?
-                    // Wait, custom logic is inside submitOrder() usually re-calculated.
-                    // We need a helper to get current price for custom plan if not stored in SELECTED_PLAN yet.
-                    
-                    // Re-calculate custom price just in case
-                    const devices = parseInt(document.getElementById('deviceSlider').value);
-                    const months = parseInt(document.getElementById('monthSlider').value);
-                    // Use a helper function or assume `updatePrice()` updates global var or UI? 
-                    // `updatePrice()` updates `totalPriceDisplay`. Let's parse it or replicate logic.
-                    // Easiest is to trust `totalPriceDisplay` text content if formatted correctly, or re-calc using config.
-                    
-                    // Let's assume SELECTED_PLAN is updated OR use the displayed price for estimation
-                    // Actually `updatePrice` function (not shown in snippet but assumed exists) should update SELECTED_PLAN?
-                    // If not, let's grab from frontend display for now.
-                    // A safer bet is to grab the raw integer if stored, otherwise re-calculate.
-                    
-                    // For now, let's assume `calculateKetenganPrice` logic is available or we use API to get clean amount ? No, just frontend calc.
-                    // Let's rely on `SELECTED_PLAN.price` being updated when opening modal? 
-                    // No, Custom Plan updating happens in the slider page, NOT in the modal.
-                    // The modal is opened with `openQrisModal('Ketengan', calculatedPrice, ...)`
-                    // SO `SELECTED_PLAN.price` IS correct because it's passed when clicking "Beli Sekarang".
-                    currentAmount = SELECTED_PLAN.price;
-                }
-
-                const response = await fetch('/api/check-voucher', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        // If CSRF is needed:
-                        // 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        voucher_code: code,
-                        amount: currentAmount
-                    })
-                });
-
-                const result = await response.json();
-
-                msg.classList.remove('hidden');
-                // ApiResponse trait returns { status: 'success', data: ... }
-                // So result.success is undefined. Check result.status === 'success'
-                if (response.ok && result.status === 'success') {
-                    msg.innerHTML = `<span class="text-green-400"><i class="fas fa-check-circle"></i> ${result.data.message}</span>`;
-                    
-                    // Update Summary
-                    updatePriceSummary(currentAmount, result.data.discount_amount, result.data.final_amount, code);
-                    
-                } else {
-                    // Extract message from structure: result.data.message or result.message
-                    const errorMessage = result.data?.message || result.message || 'Kode tidak valid';
-                    msg.innerHTML = `<span class="text-red-400"><i class="fas fa-times-circle"></i> ${errorMessage}</span>`;
-                    updatePriceSummary(currentAmount, 0, currentAmount, null);
-                }
-
-            } catch (error) {
-                console.error(error);
-                msg.classList.remove('hidden');
-                msg.innerHTML = '<span class="text-red-400">Terjadi kesalahan sistem.</span>';
-            } finally {
-                btn.innerHTML = 'Apply';
-                btn.disabled = false;
-            }
-        }
-
-        function updatePriceSummary(original, discount, final, code) {
-            const summary = document.getElementById('priceSummary');
-            summary.classList.remove('hidden');
-
-            document.getElementById('summaryOriginalPrice').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(original);
-            
-            if (discount > 0) {
-                document.getElementById('summaryDiscountRow').classList.remove('hidden');
-                document.getElementById('summaryDiscountAmount').textContent = '-Rp ' + new Intl.NumberFormat('id-ID').format(discount);
-                document.getElementById('summaryDiscountCode').textContent = code;
-            } else {
-                document.getElementById('summaryDiscountRow').classList.add('hidden');
-            }
-
-            document.getElementById('summaryFinalPrice').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(final);
-        }
-
-        function resetVoucherUI() {
-            if(document.getElementById('voucherInput')) document.getElementById('voucherInput').value = '';
-            if(document.getElementById('voucherMessage')) document.getElementById('voucherMessage').classList.add('hidden');
-            if(document.getElementById('priceSummary')) document.getElementById('priceSummary').classList.add('hidden');
-            // We can optionally show summary with just original price
-             const summary = document.getElementById('priceSummary');
-             if(summary) {
-                 summary.classList.remove('hidden');
-                 document.getElementById('summaryOriginalPrice').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(SELECTED_PLAN.price);
-                 document.getElementById('summaryDiscountRow').classList.add('hidden');
-                 document.getElementById('summaryFinalPrice').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(SELECTED_PLAN.price);
-             }
-        }
-
-        function closeQrisModal() {
-            const modal = document.getElementById('qrisModal');
-            const content = document.getElementById('qrisContent');
-            modal.classList.add('opacity-0');
-            content.classList.remove('scale-100');
-            content.classList.add('scale-95');
-
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        async function submitOrder() {
-            const wa = document.getElementById('waInput').value;
-            const proof = document.getElementById('proofInput').value;
-            const voucher = document.getElementById('voucherInput') ? document.getElementById('voucherInput').value : '';
-            const btn = document.getElementById('submitBtn');
-
-            if (!wa || !proof) {
-                alert('Mohon lengkapi Nomor WA dan Bukti Transfer');
-                return;
-            }
-
-            // Get current plan config from State
-            let planName = SELECTED_PLAN.name;
-            let devices = SELECTED_PLAN.devices;
-            let duration = SELECTED_PLAN.duration;
-            let amount = SELECTED_PLAN.price;
-
-            // If Custom (Ketengan), recalculate based on current slider values
-            if (SELECTED_PLAN.type === 'custom') {
-                planName = 'Ketengan';
-                devices = parseInt(document.getElementById('deviceSlider').value);
-                // We need to get duration from the active button
-                const activeDurationBtn = document.querySelector('.duration-btn.active');
-                if (activeDurationBtn) duration = parseInt(activeDurationBtn.dataset.value);
-
-                // Get price from simple parsing or global var logic
-                const priceText = document.getElementById('totalPrice').textContent;
-                amount = parseInt(priceText.replace(/[^0-9]/g, ''));
-            }
-            // The instruction implies we should use SELECTED_PLAN directly for the payload,
-            // and the custom plan logic for `planName`, `devices`, `duration`, `amount`
-            // is no longer needed here as the payload will use SELECTED_PLAN directly.
-            // However, the instruction's payload uses SELECTED_PLAN.name, SELECTED_PLAN.devices, etc.
-            // which means the custom plan recalculation logic should still update SELECTED_PLAN
-            // or the payload should be constructed from the recalculated values.
-            // Given the instruction explicitly states `plan_name: SELECTED_PLAN.name`,
-            // `device_quota: SELECTED_PLAN.devices || 1`, etc., it suggests that SELECTED_PLAN
-            // should already hold the correct values, or the backend will handle defaults.
-            // Let's remove the custom plan recalculation block as per the instruction's implied payload structure.
-
-            // Lock button
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-            // Get selected payment method name
-            const selectedMethod = PAYMENT_METHODS[SELECTED_PAYMENT_INDEX];
-            const methodName = selectedMethod ? selectedMethod.name : '';
-
-            try {
-                const response = await fetch('/api/checkout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        plan_name: SELECTED_PLAN.name,
-                        device_quota: SELECTED_PLAN.devices || 1, // Default 1
-                        duration_months: SELECTED_PLAN.duration || 1, // Default 1
-                        amount: SELECTED_PLAN.price, // Trusting frontend amount for initial validation, backend re-calcs
-                        customer_contact: wa,
-                        proof_digits: proof,
-                        voucher_code: voucher, // Include voucher code
-                        payment_method: methodName // Add Payment Method
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.status === 'success') {
-                    window.location.href = '/success/' + result.data.transaction_code;
-                } else {
-                    // Extract message from data if available, or just use general error
-                    const msg = result.data && result.data.message ? result.data.message : 'Unknown error';
-                    alert('Error: ' + msg);
-                    btn.disabled = false;
-                    btn.textContent = 'Kirim';
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Terjadi kesalahan koneksi.');
-                btn.disabled = false;
-                btn.textContent = 'Kirim';
-            }
+        function goToPayment(planName, amount, devices, duration) {
+            const url = '/bayar?plan=' + encodeURIComponent(planName)
+                + '&amount=' + amount
+                + '&devices=' + (devices || 1)
+                + '&duration=' + (duration || 1);
+            window.location.href = url;
         }
     </script>
+
 </body>
 
 </html>
