@@ -22,7 +22,7 @@ class Voucher extends Model
         
         if ($this->expires_at && $this->expires_at->isPast()) return false;
         
-        if ($this->usage_limit !== null && $this->usage_count >= $this->usage_limit) return false;
+        if ($this->usage_limit !== null && $this->usage_limit > 0 && $this->usage_count >= $this->usage_limit) return false;
 
         return true;
     }

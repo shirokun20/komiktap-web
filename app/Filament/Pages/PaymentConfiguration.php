@@ -69,11 +69,15 @@ class PaymentConfiguration extends Page
                                     ->rows(2)
                                     ->columnSpanFull(),
                                 FileUpload::make('qris_image_path')
-                                    ->label('QRIS Image (Optional)')
+                                    ->label('QRIS Image (Static QRIS Header/Image)')
                                     ->image()
                                     ->disk('public')
                                     ->visibility('public')
                                     ->directory('payment-qris')
+                                    ->columnSpanFull(),
+                                TextInput::make('qris_string')
+                                    ->label('QRIS String (Dynamic QRIS Data)')
+                                    ->placeholder('Masukkan string data QRIS statis untuk dirender dinamis (Opsional)')
                                     ->columnSpanFull(),
                             ])
                             ->columnSpanFull()

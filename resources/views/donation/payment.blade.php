@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -440,7 +441,7 @@
                             <div class="space-y-3 mb-4">
                                 <div>
                                     <label class="text-gray-400 text-xs block mb-1.5 font-medium">Nomor WA / Email <span
-                                            class="text-gray-600">(Opsional)</span></label>
+                                            class="text-[#ff7900]">*</span></label>
                                     <input type="text" id="waInput" placeholder="cth: 08123456789 atau email@domain.com"
                                         class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all">
                                 </div>
@@ -664,8 +665,19 @@
                     </div>
                     ` : ''}
 
-                    ${qrisUrl ? `
-                    <!-- QRIS Image -->
+                    ${method.qris_string ? `
+                    <!-- Dynamic QRIS -->
+                    <div class="mb-5">
+                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase mb-3">Kode QRIS Dinamis</p>
+                        <div class="flex justify-center">
+                            <div class="bg-white p-4 rounded-2xl shadow-xl hover:scale-105 transition-transform inline-block">
+                                <div id="qris-dinamis-${i}"></div>
+                            </div>
+                        </div>
+                        <p class="text-center text-gray-600 text-xs mt-2"><i class="fas fa-qrcode mr-1"></i> Scan dengan aplikasi e-Wallet</p>
+                    </div>
+                    ` : (qrisUrl ? `
+                    <!-- Static QRIS Image -->
                     <div class="mb-5">
                         <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase mb-3">Kode QRIS</p>
                         <div class="flex justify-center">
@@ -675,7 +687,7 @@
                         </div>
                         <p class="text-center text-gray-600 text-xs mt-2"><i class="fas fa-search-plus mr-1"></i> Ketuk gambar untuk memperbesar</p>
                     </div>
-                    ` : ''}
+                    ` : '')}
 
                     ${method.instructions ? `
                     <!-- Instructions CTA -->
@@ -695,6 +707,27 @@
                 `;
                 details.appendChild(panel);
             });
+
+            // Generate QR after DOM updates
+            setTimeout(() => {
+                PAYMENT_METHODS.forEach((method, i) => {
+                    if (method.qris_string) {
+                        const container = document.getElementById(`qris-dinamis-${i}`);
+                        if (container) {
+                            container.innerHTML = '';
+                            const dinamisStr = generateDynamicQris(method.qris_string, AMOUNT);
+                            new QRCode(container, {
+                                text: dinamisStr,
+                                width: 220,
+                                height: 220,
+                                colorDark : "#000000",
+                                colorLight : "#ffffff",
+                                correctLevel : QRCode.CorrectLevel.M
+                            });
+                        }
+                    }
+                });
+            }, 100);
         }
 
         // ====================================
@@ -781,12 +814,49 @@
         }
 
         // ====================================
+        // Dynamic QRIS Generators
+        // ====================================
+        function convertCRC16(str) {
+            let crc = 0xFFFF;
+            for (let c = 0; c < str.length; c++) {
+                crc ^= str.charCodeAt(c) << 8;
+                for (let i = 0; i < 8; i++) {
+                    if (crc & 0x8000) {
+                        crc = (crc << 1) ^ 0x1021;
+                    } else {
+                        crc = crc << 1;
+                    }
+                }
+            }
+            let hex = (crc & 0xFFFF).toString(16).toUpperCase();
+            if (hex.length === 3) hex = "0" + hex;
+            return hex;
+        }
+
+        function generateDynamicQris(qris, qty) {
+            let base = qris.slice(0, -4);
+            let step1 = base.replace("010211", "010212");
+            let step2 = step1.split("5802ID");
+            let qtyStr = qty.toString();
+            let uang = "54" + qtyStr.length.toString().padStart(2, '0') + qtyStr + "5802ID";
+            let fix = (step2[0] || "").trim() + uang + (step2[1] || "").trim();
+            fix += convertCRC16(fix);
+            return fix;
+        }
+
+        // ====================================
         // Submit Donation
         // ====================================
         async function submitDonation() {
             const proof = document.getElementById('proofInput').value.trim();
-            const wa = document.getElementById('waInput').value.trim() || '-';
+            const wa = document.getElementById('waInput').value.trim();
             const btn = document.getElementById('submitBtn');
+
+            if (!wa) {
+                showToast('Nomor WA / Email wajib diisi!');
+                document.getElementById('waInput').focus();
+                return;
+            }
 
             if (SELECTED_INDEX < 0) {
                 showToast('Pilih metode pembayaran terlebih dahulu!');
