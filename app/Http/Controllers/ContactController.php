@@ -5,12 +5,23 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\Message;
+use App\Traits\HoneypotTrait;
 use Illuminate\Support\Facades\Validator;
 
 class ContactController extends Controller
 {
+    use HoneypotTrait;
+
     public function sendMessage(Request $request)
     {
+        // 8.12 Honeypot check — reject silently if filled
+        if ($this->isHoneypotFilled($request)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesan Anda berhasil dikirim! Tim kami akan segera menghubungi Anda.',
+            ]);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',

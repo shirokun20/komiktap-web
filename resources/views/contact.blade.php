@@ -165,6 +165,10 @@
                 <h3 class="text-2xl font-bold text-white mb-6">Kirim Pesan</h3>
                 <form onsubmit="event.preventDefault(); submitContact();" class="space-y-4">
                     <meta name="csrf-token" content="{{ csrf_token() }}">
+                    {{-- Honeypot field — hidden from humans, bots will fill it --}}
+                    <input type="text" id="_hp_website" name="_hp_website" value=""
+                        style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;"
+                        tabindex="-1" autocomplete="off" aria-hidden="true">
                     <div>
                         <label class="block text-sm text-gray-400 mb-2">Nama</label>
                         <input id="inputName" type="text"
@@ -235,7 +239,7 @@
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    body: JSON.stringify({ name, email, message })
+                    body: JSON.stringify({ name, email, message, _hp_website: document.getElementById('_hp_website')?.value || '' })
                 });
 
                 const data = await response.json();

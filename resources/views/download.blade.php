@@ -100,7 +100,7 @@
 
                         <!-- Right: Action -->
                         <div class="flex flex-col gap-3 w-full md:w-48 shrink-0 md:border-l md:border-white/5 md:pl-8 justify-center">
-                            <a href="{{ route('download.version', $apk->version_code) }}" class="btn-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-sm shadow-lg shadow-komik-primary/20 hover:shadow-komik-primary/40">
+                            <a href="{{ route('download.ticket', $apk->version_code) }}" class="btn-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-sm shadow-lg shadow-komik-primary/20 hover:shadow-komik-primary/40">
                                 <i class="fas fa-download"></i>
                                 Download
                             </a>

@@ -14,6 +14,9 @@ class Transaction extends Model
     
     protected $casts = [
         // 'customer_contact' => 'encrypted', // Encryption disabled for searchability
+        'tripay_raw_response' => 'array',
+        'tripay_paid_at'      => 'datetime',
+        'tripay_expired_at'   => 'datetime',
     ];
 
     public function getActivitylogOptions(): LogOptions

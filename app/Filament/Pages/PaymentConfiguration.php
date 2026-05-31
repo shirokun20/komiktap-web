@@ -10,6 +10,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 
@@ -55,7 +56,7 @@ class PaymentConfiguration extends Page
                                     ->label('Account Number / VA'),
                                 TextInput::make('account_holder')
                                     ->label('Account Holder Name'),
-                                \Filament\Forms\Components\Select::make('usage_type')
+                                Select::make('usage_type')
                                     ->label('Usage')
                                     ->options([
                                         'all' => 'All (Order & Donation)',
@@ -84,6 +85,41 @@ class PaymentConfiguration extends Page
                             ->reorderableWithButtons()
                             ->itemLabel(fn (array $state): ?string => ($state['name'] ?? 'New Method') . ' - ' . ucfirst($state['usage_type'] ?? 'All')),
                     ])->columns(2),
+
+                Section::make('TriPay Integration')
+                    ->description('Configure TriPay payment gateway for automatic payment processing. Get credentials from tripay.co.id/member/merchant.')
+                    ->schema([
+                        Toggle::make('tripay_is_enabled')
+                            ->label('Enable TriPay Gateway')
+                            ->helperText('When enabled, checkout will create a TriPay transaction automatically.')
+                            ->columnSpanFull()
+                            ->afterStateHydrated(fn ($component) => $component->state((bool) config('tripay.is_enabled'))),
+                        TextInput::make('tripay_api_key')
+                            ->label('API Key')
+                            ->password()
+                            ->revealable()
+                            ->placeholder('DEV-...')
+                            ->afterStateHydrated(fn ($component) => $component->state(config('tripay.api_key'))),
+                        TextInput::make('tripay_private_key')
+                            ->label('Private Key')
+                            ->password()
+                            ->revealable()
+                            ->afterStateHydrated(fn ($component) => $component->state(config('tripay.private_key'))),
+                        TextInput::make('tripay_merchant_code')
+                            ->label('Merchant Code')
+                            ->placeholder('T...')
+                            ->afterStateHydrated(fn ($component) => $component->state(config('tripay.merchant_code'))),
+                        Select::make('tripay_mode')
+                            ->label('Mode')
+                            ->options([
+                                'sandbox'    => 'Sandbox (Testing)',
+                                'production' => 'Production (Live)',
+                            ])
+                            ->default('sandbox')
+                            ->afterStateHydrated(fn ($component) => $component->state(config('tripay.mode', 'sandbox'))),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
             ])
             ->statePath('data');
     }
@@ -96,8 +132,11 @@ class PaymentConfiguration extends Page
         $settings->payment_methods = $data['payment_methods'] ?? [];
         $settings->save();
 
+        // Note: TriPay credentials are stored in .env, not in DB settings.
+        // Display a reminder to update .env for TriPay config.
         Notification::make() 
             ->title('Settings saved successfully.')
+            ->body('Remember to update TRIPAY_* variables in your .env file for TriPay credentials.')
             ->success()
             ->send();
     }

@@ -54,7 +54,9 @@ class TransactionResource extends Resource
                             ->required()
                             ->maxLength(255),
                         Forms\Components\TextInput::make('proof_digits')
-                            ->maxLength(5),
+                            ->label('Proof Digits (Manual Payment)')
+                            ->maxLength(5)
+                            ->helperText('Only used for manual bank transfer verification. Not required when TriPay is enabled.'),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Order Details')
@@ -126,6 +128,50 @@ class TransactionResource extends Resource
                             ->label('License Key')
                             ->content(fn (Transaction $record): string => $record->license?->key ?? 'No License Generated'),
                     ])->columns(2),
+
+                Forms\Components\Section::make('TriPay Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('tripay_reference')
+                            ->label('TriPay Reference')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('—'),
+                        Forms\Components\TextInput::make('tripay_status')
+                            ->label('TriPay Status')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('—'),
+                        Forms\Components\TextInput::make('tripay_payment_method')
+                            ->label('TriPay Payment Method')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('—'),
+                        Forms\Components\TextInput::make('tripay_amount_received')
+                            ->label('Amount Received')
+                            ->prefix('IDR')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('—'),
+                        Forms\Components\TextInput::make('tripay_fee')
+                            ->label('TriPay Fee')
+                            ->prefix('IDR')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('—'),
+                        Forms\Components\Placeholder::make('tripay_paid_at')
+                            ->label('Paid At')
+                            ->content(fn (Transaction $record): string => $record->tripay_paid_at
+                                ? \Carbon\Carbon::parse($record->tripay_paid_at)->format('d M Y H:i')
+                                : '—'),
+                        Forms\Components\Placeholder::make('tripay_expired_at')
+                            ->label('Expired At')
+                            ->content(fn (Transaction $record): string => $record->tripay_expired_at
+                                ? \Carbon\Carbon::parse($record->tripay_expired_at)->format('d M Y H:i')
+                                : '—'),
+                    ])
+                    ->columns(2)
+                    ->collapsible()
+                    ->collapsed(),
             ]);
     }
 
@@ -185,9 +231,33 @@ class TransactionResource extends Resource
                         'pending' => 'warning',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('proof_digits')
+                Tables\Columns\TextColumn::make('tripay_reference')
+                    ->label('TriPay Ref')
                     ->searchable()
-                    ->label('Proof'),
+                    ->copyable()
+                    ->fontFamily('mono')
+                    ->placeholder('-')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('tripay_status')
+                    ->label('TriPay Status')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'PAID'    => 'success',
+                        'FAILED'  => 'danger',
+                        'EXPIRED' => 'warning',
+                        default   => 'gray',
+                    })
+                    ->placeholder('-')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('tripay_payment_method')
+                    ->label('TriPay Method')
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('tripay_paid_at')
+                    ->label('Paid At')
+                    ->dateTime()
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('license/voucher')
                     ->label('Key / Voucher')
                     ->state(function (Transaction $record) {

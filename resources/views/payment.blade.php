@@ -480,6 +480,10 @@
                                     </label>
                                     <input type="text" id="proofInput" maxlength="8" placeholder="cth: 12345"
                                         class="w-full bg-black/20 border border-white/10 rounded-xl mb-3 px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all font-mono tracking-widest mb-2">
+                                    {{-- Honeypot field — hidden from humans, bots will fill it --}}
+                                    <input type="text" id="_hp_website" name="_hp_website" value=""
+                                        style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;"
+                                        tabindex="-1" autocomplete="off" aria-hidden="true">
                                     <button onclick="submitOrder()" id="submitBtn"
                                         class="btn-primary w-full text-white px-5 py-3 rounded-xl text-sm font-bold">
                                         Konfirmasi
@@ -986,40 +990,43 @@
                 return;
             }
 
-            if (!proof || proof.length < 3) {
-                showToast('Masukkan minimal 3 digit referensi transfer!');
-                document.getElementById('proofInput').focus();
-                return;
-            }
-
             const method = PAYMENT_METHODS[SELECTED_INDEX];
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             setStep(3);
 
             try {
+                const body = {
+                    plan_name: PLAN_NAME,
+                    device_quota: PLAN_DEVICES || 1,
+                    duration_months: PLAN_DURATION || 1,
+                    amount: FINAL_AMOUNT,
+                    customer_contact: wa,
+                    payment_method: method?.name || '',
+                    voucher_code: VOUCHER_CODE || '',
+                    _hp_website: document.getElementById('_hp_website')?.value || '',
+                };
+                // Only include proof_digits if filled (manual payment fallback)
+                if (proof) body.proof_digits = proof;
+
                 const res = await fetch('/api/checkout', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    body: JSON.stringify({
-                        plan_name: PLAN_NAME,
-                        device_quota: PLAN_DEVICES || 1,
-                        duration_months: PLAN_DURATION || 1,
-                        amount: FINAL_AMOUNT,
-                        customer_contact: wa,
-                        proof_digits: proof,
-                        payment_method: method?.name || '',
-                        voucher_code: VOUCHER_CODE || ''
-                    })
+                    body: JSON.stringify(body)
                 });
 
                 const json = await res.json();
 
                 if (json.status === 'success') {
-                    window.location.href = '/success/' + json.data.transaction_code;
+                    // If TriPay data returned, show payment code panel
+                    if (json.data?.tripay) {
+                        showTripayPaymentPanel(json.data.tripay, json.data.transaction_code);
+                    } else {
+                        window.location.href = '/success/' + json.data.transaction_code;
+                    }
                 } else {
                     showToast('Gagal: ' + (json.data?.message || 'Terjadi kesalahan.'));
                     btn.disabled = false;
@@ -1033,6 +1040,102 @@
                 btn.innerHTML = 'Konfirmasi';
                 setStep(2);
             }
+        }
+
+        // ====================================
+        // TriPay Payment Panel (5.1 / 5.3 / 5.4)
+        // ====================================
+        function showTripayPaymentPanel(tripay, transactionCode) {
+            const confirmForm = document.getElementById('confirmationForm');
+            confirmForm.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 text-green-400 text-sm font-semibold mb-2">
+                        <i class="fas fa-check-circle"></i> Pesanan dibuat! Selesaikan pembayaran di bawah.
+                    </div>
+
+                    ${tripay.pay_code ? `
+                    <div class="account-copy-card rounded-xl p-4" onclick="copyText('${tripay.pay_code}', 'Kode pembayaran disalin!')">
+                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase mb-2">Nomor VA / Kode Bayar</p>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-white font-mono font-bold text-xl tracking-widest">${tripay.pay_code}</span>
+                            <div class="w-9 h-9 rounded-lg bg-[#ff7900]/10 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-copy text-[#ff7900] text-sm"></i>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-xs mt-2"><i class="fas fa-hand-pointer text-[10px]"></i> Ketuk untuk menyalin</p>
+                    </div>
+                    ` : ''}
+
+                    ${tripay.qr_string ? `
+                    <div class="flex flex-col items-center gap-2">
+                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase">Scan QRIS</p>
+                        <div class="bg-white p-3 rounded-2xl shadow-xl inline-block" id="tripayQrContainer"></div>
+                    </div>
+                    ` : ''}
+
+                    ${tripay.checkout_url ? `
+                    <a href="${tripay.checkout_url}" target="_blank"
+                        class="btn-primary w-full text-white px-5 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-external-link-alt"></i> Bayar Sekarang
+                    </a>
+                    ` : ''}
+
+                    ${tripay.expired_time ? `
+                    <div class="flex items-center justify-between bg-white/3 rounded-xl px-4 py-3 border border-white/6 text-sm">
+                        <span class="text-gray-400">Batas Waktu Pembayaran</span>
+                        <span class="text-[#ff7900] font-mono font-bold" id="tripayCountdown">--:--:--</span>
+                    </div>
+                    ` : ''}
+
+                    <a href="/success/${transactionCode}"
+                        class="block w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors mt-2">
+                        Sudah bayar? Lihat status pesanan →
+                    </a>
+                </div>
+            `;
+
+            // Generate QR if qr_string present
+            if (tripay.qr_string) {
+                setTimeout(() => {
+                    const container = document.getElementById('tripayQrContainer');
+                    if (container) {
+                        new QRCode(container, {
+                            text: tripay.qr_string,
+                            width: 200,
+                            height: 200,
+                            colorDark: '#000000',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    }
+                }, 100);
+            }
+
+            // Start countdown timer (5.4)
+            if (tripay.expired_time) {
+                startCountdown(tripay.expired_time);
+            }
+        }
+
+        function startCountdown(expiredTimestamp) {
+            const el = document.getElementById('tripayCountdown');
+            if (!el) return;
+
+            function update() {
+                const now = Math.floor(Date.now() / 1000);
+                const diff = expiredTimestamp - now;
+                if (diff <= 0) {
+                    el.textContent = 'EXPIRED';
+                    el.classList.add('text-red-400');
+                    return;
+                }
+                const h = Math.floor(diff / 3600);
+                const m = Math.floor((diff % 3600) / 60);
+                const s = diff % 60;
+                el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                setTimeout(update, 1000);
+            }
+            update();
         }
 
         // ESC closes overlays

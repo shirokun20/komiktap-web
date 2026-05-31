@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\Transaction;
+use App\Services\TripayService;
+use App\Traits\HoneypotTrait;
 use Illuminate\Support\Facades\Log;
 
 use App\Traits\ApiResponse;
@@ -12,6 +14,7 @@ use App\Traits\ApiResponse;
 class CheckoutController extends Controller
 {
     use ApiResponse;
+    use HoneypotTrait;
 
     public function store(Request $request, \App\Settings\PricingSettings $settings)
     {
@@ -21,7 +24,7 @@ class CheckoutController extends Controller
             'duration_months' => 'required|integer|min:1',
             // We authorize amount calculation on backend, but keep key for structure validation if needed
             'customer_contact' => 'required|string',
-            'proof_digits' => 'required|string|max:5',
+            'proof_digits' => 'nullable|string|max:5',
             'amount' => 'nullable|numeric|min:1000', // For Donation
             'voucher_code' => 'nullable|string',
             'payment_method' => 'required|string', // Name of the selected method
@@ -29,6 +32,15 @@ class CheckoutController extends Controller
 
         if ($validator->fails()) {
             return $this->validationError($validator->errors());
+        }
+
+        // 8.11 Honeypot check — reject silently if filled
+        if ($this->isHoneypotFilled($request)) {
+            return $this->success([
+                'transaction_id'   => null,
+                'transaction_code' => 'KURON-INV-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(4)),
+                'message'          => 'Order received successfully!',
+            ]);
         }
 
         $validated = $validator->validated();
@@ -59,10 +71,6 @@ class CheckoutController extends Controller
             if (!empty($selectedMethod['account_holder'])) {
                 $details .= " (" . $selectedMethod['account_holder'] . ")";
             }
-            // Instructions not saved to DB anymore to keep invoice clean
-            // if (!empty($selectedMethod['instructions'])) {
-            //    $details .= "\nNotes: " . strip_tags($selectedMethod['instructions']);
-            // }
             
             // Checks
             $isCampaign = \App\Models\DonationCampaign::where('title', $planName)->exists();
@@ -149,7 +157,7 @@ class CheckoutController extends Controller
                 'duration_months' => $duration,
                 'amount' => max(0, $finalAmount), // Ensure non-negative
                 'customer_contact' => $validated['customer_contact'],
-                'proof_digits' => $validated['proof_digits'],
+                'proof_digits' => $validated['proof_digits'] ?? null,
                 'status' => 'pending',
                 'voucher_code' => $voucherCodeToUse,
                 'discount_amount' => $discountAmount,
@@ -170,15 +178,80 @@ class CheckoutController extends Controller
                 $message .= " Voucher applied: Save IDR " . number_format($discountAmount);
             }
 
-            return $this->success([
-                'transaction_id' => $transaction->id,
+            $responseData = [
+                'transaction_id'   => $transaction->id,
                 'transaction_code' => $transaction->code,
-                'message' => $message
-            ]);
+                'message'          => $message,
+            ];
+
+            // 4.1 TriPay integration — call after amount calculation if enabled
+            if (config('tripay.is_enabled', false)) {
+                try {
+                    $tripayData = $this->createTripayTransaction($transaction, $paymentMethodName, $request);
+                    // 4.3 Return tripay pay_code / checkout_url in response
+                    $responseData['tripay'] = $tripayData;
+                    $message .= ' Payment created via TriPay.';
+                } catch (\Exception $e) {
+                    // 4.4 Backward compatibility: skip Tripay if API fails
+                    Log::error('Checkout: TriPay transaction creation failed, falling back to manual', [
+                        'transaction' => $transaction->code,
+                        'error'       => $e->getMessage(),
+                    ]);
+                    // Don't throw — let the order proceed manually
+                }
+            }
+
+            return $this->success($responseData);
 
         } catch (\Exception $e) {
             Log::error('Checkout Error: ' . $e->getMessage());
             return $this->error($e->getMessage(), 400); // Return 400 for bad request logic
         }
+    }
+
+    /**
+     * 4.1 / 4.2 Create TriPay transaction and store reference in the transaction record.
+     */
+    protected function createTripayTransaction(Transaction $transaction, string $paymentMethodName, Request $request): array
+    {
+        $tripay = app(TripayService::class);
+
+        $contact = $transaction->customer_contact;
+        $isEmail = str_contains($contact, '@');
+
+        $tripayData = $tripay->createTransaction([
+            'method'         => $paymentMethodName,
+            'merchant_ref'   => $transaction->code,
+            'amount'         => (int) $transaction->amount,
+            'customer_name'  => $isEmail ? explode('@', $contact)[0] : $contact,
+            'customer_email' => $isEmail ? $contact : 'noreply@komiktap.info',
+            'customer_phone' => $isEmail ? '08000000000' : $contact,
+            'order_items'    => [
+                [
+                    'name'     => $transaction->plan_name,
+                    'price'    => (int) $transaction->amount,
+                    'quantity' => 1,
+                ],
+            ],
+            'return_url' => url('/success/' . $transaction->code),
+        ]);
+
+        // 4.2 Store tripay reference and metadata
+        $transaction->update([
+            'tripay_reference'      => $tripayData['reference'] ?? null,
+            'tripay_payment_method' => $tripayData['payment_method'] ?? $paymentMethodName,
+            'tripay_expired_at'     => isset($tripayData['expired_time'])
+                ? \Carbon\Carbon::createFromTimestamp($tripayData['expired_time'])
+                : null,
+            'tripay_raw_response'   => $tripayData,
+        ]);
+
+        return [
+            'reference'    => $tripayData['reference'] ?? null,
+            'pay_code'     => $tripayData['pay_code'] ?? null,
+            'checkout_url' => $tripayData['checkout_url'] ?? null,
+            'expired_time' => $tripayData['expired_time'] ?? null,
+            'qr_string'    => $tripayData['qr_string'] ?? null,
+        ];
     }
 }

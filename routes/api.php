@@ -9,7 +9,8 @@ Route::get('/plans', [\App\Http\Controllers\ApiController::class, 'plans']);
 Route::get('/faqs', [\App\Http\Controllers\ApiController::class, 'faqs']);
 Route::get('/payment-methods', [\App\Http\Controllers\ApiController::class, 'paymentMethods']);
 
-Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store']);
+Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store'])
+    ->middleware('throttle:' . config('tripay.rate_limit.checkout', '5,10'));
 Route::post('/check-voucher', [\App\Http\Controllers\ApiController::class, 'checkVoucher']);
 Route::post('/check-license', [\App\Http\Controllers\LicenseController::class, 'check']);
 Route::post('/error-report', [\App\Http\Controllers\Api\ErrorReportController::class, 'store']);

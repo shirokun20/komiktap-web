@@ -84,9 +84,29 @@
                 <span class="text-white font-bold text-lg">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</span>
             </div>
 
+            @if($transaction->tripay_reference)
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
+                <span class="text-gray-500">TriPay Reference</span>
+                <span class="text-white font-mono text-sm break-all">{{ $transaction->tripay_reference }}</span>
+            </div>
+            @endif
+
+            @if($transaction->tripay_payment_method)
+            <div class="flex justify-between items-center text-sm md:text-base">
+                <span class="text-gray-500">Payment Method</span>
+                <span class="text-white font-medium">{{ $transaction->tripay_payment_method }}</span>
+            </div>
+            @endif
+
              <div class="flex justify-between items-center text-sm md:text-base">
                 <span class="text-gray-500">Status</span>
-                <span class="bg-yellow-500/10 text-yellow-500 text-xs md:text-sm px-3 py-1 rounded-lg font-bold uppercase tracking-wide">Pending</span>
+                @if($transaction->status === 'approved')
+                    <span class="bg-green-500/10 text-green-500 text-xs md:text-sm px-3 py-1 rounded-lg font-bold uppercase tracking-wide">Approved</span>
+                @elseif($transaction->status === 'rejected')
+                    <span class="bg-red-500/10 text-red-500 text-xs md:text-sm px-3 py-1 rounded-lg font-bold uppercase tracking-wide">Rejected</span>
+                @else
+                    <span class="bg-yellow-500/10 text-yellow-500 text-xs md:text-sm px-3 py-1 rounded-lg font-bold uppercase tracking-wide">Pending</span>
+                @endif
             </div>
         </div>
 
