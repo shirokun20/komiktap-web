@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\FanskuWebhookController;
 use App\Http\Controllers\TripayCallbackController;
 use App\Http\Controllers\OrderTrackingController;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +14,12 @@ Route::get('/', function () {
 // TriPay callback — no CSRF (called by TriPay server)
 Route::post('/api/tripay/callback', [TripayCallbackController::class, 'handle'])
     ->name('tripay.callback')
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+// Fansku webhook — no CSRF (called by Fansku server), event: donation.paid
+Route::post('/api/fansku/webhook', [FanskuWebhookController::class, 'handle'])
+    ->name('fansku.webhook')
+    ->middleware('throttle:60,1')
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 // 8.3 Checkout with rate limiting (5 per 10 minutes)
@@ -100,6 +107,11 @@ Route::get('/download/{apk:version_code}', function (\App\Models\ApkVersion $apk
     $expected = hash_hmac('sha256', "download:{$apk->version_code}:{$expires}", config('app.key'));
     if (! hash_equals($expected, $signature)) {
         abort(403, 'Invalid download signature.');
+    }
+
+    // File missing on disk → 404 (not 500)
+    if (! Storage::disk('public')->exists($apk->file_path)) {
+        abort(404, 'File not found.');
     }
 
     // Increment download count

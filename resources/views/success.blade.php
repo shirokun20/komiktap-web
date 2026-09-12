@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transaction Successful - KomikTap</title>
+    <title>{{ $transaction->status === 'approved' ? 'Transaction Successful' : ($transaction->status === 'rejected' ? 'Transaction Rejected' : 'Menunggu Pembayaran') }} - KomikTap</title>
     <link rel="icon" href="https://komiktap.info/wp-content/uploads/2020/09/cropped-LOGOa-192x192.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -50,16 +50,40 @@
         
         <!-- Icon -->
         <div class="mb-8 relative inline-block">
+            @if($transaction->status === 'approved')
             <div class="absolute inset-0 bg-komik-success/20 rounded-full blur-xl animate-pulse"></div>
             <div class="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white text-4xl md:text-6xl shadow-xl relative z-10 animate-bounce-slow">
                 <i class="fas fa-check"></i>
             </div>
+            @elseif($transaction->status === 'rejected')
+            <div class="absolute inset-0 bg-red-500/20 rounded-full blur-xl"></div>
+            <div class="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center text-white text-4xl md:text-6xl shadow-xl relative z-10">
+                <i class="fas fa-times"></i>
+            </div>
+            @else
+            <div class="absolute inset-0 bg-yellow-500/20 rounded-full blur-xl animate-pulse"></div>
+            <div class="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full flex items-center justify-center text-white text-4xl md:text-6xl shadow-xl relative z-10">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            @endif
         </div>
 
+        @if($transaction->status === 'approved')
         <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">Transaction Received!</h1>
         <p class="text-base md:text-lg text-gray-400 mb-10 max-w-lg mx-auto">
             Thank you for your order. We are verifying your proof of payment.
         </p>
+        @elseif($transaction->status === 'rejected')
+        <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">Transaksi Ditolak</h1>
+        <p class="text-base md:text-lg text-gray-400 mb-10 max-w-lg mx-auto">
+            Maaf, transaksi ini ditolak atau kedaluwarsa. Silakan buat pesanan baru.
+        </p>
+        @else
+        <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">Menunggu Pembayaran</h1>
+        <p class="text-base md:text-lg text-gray-400 mb-10 max-w-lg mx-auto">
+            Pesanan Anda sudah dibuat. Selesaikan pembayaran QRIS agar status berubah menjadi approved otomatis.
+        </p>
+        @endif
 
         <!-- Transaction Details -->
         <div class="bg-[#0f0e13]/50 rounded-2xl p-6 md:p-8 mb-10 text-left border border-white/5 space-y-4">
@@ -80,9 +104,40 @@
             @endif
 
             <div class="flex justify-between items-center text-sm md:text-base">
-                <span class="text-gray-500">Total Paid</span>
-                <span class="text-white font-bold text-lg">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</span>
+                <span class="text-gray-500">Nominal Pesanan</span>
+                <span class="text-white font-semibold">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</span>
             </div>
+
+            @php
+                $fanskuRaw = $transaction->fansku_raw_response ?? [];
+                $fanskuFee = $fanskuRaw['fee'] ?? null;
+                $fanskuTotal = $fanskuRaw['total_amount'] ?? null;
+            @endphp
+
+            @if($transaction->fansku_support_id && !is_null($fanskuFee))
+            <div class="flex justify-between items-center text-sm md:text-base">
+                <span class="text-gray-500">Biaya Layanan QRIS (0,6%)</span>
+                <span class="text-white font-semibold">IDR {{ number_format($fanskuFee, 0, ',', '.') }}</span>
+            </div>
+            @endif
+
+            <div class="flex justify-between items-center text-sm md:text-base">
+                <span class="text-gray-500">{{ $transaction->status === 'approved' ? 'Total Paid' : 'Total Tagihan' }}</span>
+                <span class="text-white font-bold text-lg">IDR {{ number_format($fanskuTotal ?? $transaction->amount, 0, ',', '.') }}</span>
+            </div>
+            @if($transaction->fansku_support_id)
+            <p class="text-gray-600 text-[11px] leading-relaxed">
+                <i class="fas fa-info-circle mr-1"></i>
+                Biaya layanan diteruskan ke penyedia pembayaran (Fansku/Xendit), bukan tambahan dari KomikTap.
+            </p>
+            @endif
+
+            @if($transaction->fansku_support_id)
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
+                <span class="text-gray-500">Fansku Reference</span>
+                <span class="text-white font-mono text-sm break-all">{{ $transaction->fansku_code ?? $transaction->fansku_support_id }}</span>
+            </div>
+            @endif
 
             @if($transaction->tripay_reference)
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
@@ -112,18 +167,32 @@
 
         <!-- Next Steps -->
         <div class="space-y-4">
+            @if($transaction->status === 'approved')
              <div class="text-xs text-gray-500 leading-relaxed">
                 <i class="fas fa-info-circle mr-1 text-komik-primary"></i>
                 Check your WhatsApp/Email regularly. We will send the <b>License Key</b> once approved.
             </div>
+            @elseif($transaction->status === 'rejected')
+             <div class="text-xs text-gray-500 leading-relaxed">
+                <i class="fas fa-info-circle mr-1 text-red-400"></i>
+                Transaksi ini tidak dapat dilanjutkan. Silakan buat pesanan baru jika masih membutuhkan layanan.
+            </div>
+            @else
+             <div class="text-xs text-gray-500 leading-relaxed">
+                <i class="fas fa-qrcode mr-1 text-komik-primary"></i>
+                Status masih <b>Pending</b> — pembayaran belum diterima. Kembali ke halaman bayar untuk scan QRIS, lalu refresh halaman ini.
+            </div>
+            @endif
 
             <a href="{{ url('/') }}" class="block w-full py-4 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-colors border border-white/5">
                 <i class="fas fa-arrow-left mr-2"></i> Back to Home
             </a>
             
+            @if($transaction->status === 'approved')
              <a href="{{ route('invoices.show', $transaction) }}" target="_blank" class="block w-full py-2 text-sm text-komik-primary hover:text-white transition-colors">
                 View Invoice
             </a>
+            @endif
         </div>
 
     </div>

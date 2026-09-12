@@ -74,7 +74,7 @@
 
                 <!-- Total -->
                 <tr>
-                    <td class="p-3 text-right font-bold text-gray-800">Total Paid</td>
+                    <td class="p-3 text-right font-bold text-gray-800">{{ $transaction->status === 'approved' ? 'Total Paid' : 'Total Tagihan' }}</td>
                     <td class="p-3 text-right font-bold text-gray-800">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</td>
                 </tr>
             </tbody>
@@ -119,15 +119,23 @@
         @endif
 
         <div class="text-center text-sm text-gray-500 mt-8 border-t pt-4">
+            @if($transaction->status === 'approved')
             <p>Thank you for your business!</p>
+            @elseif($transaction->status === 'rejected')
+            <p>Transaksi ini ditolak atau kedaluwarsa.</p>
+            @else
+            <p>Menunggu pembayaran — invoice ini belum lunas.</p>
+            @endif
             <p>Status: <span class="uppercase font-bold {{ $transaction->status === 'approved' ? 'text-green-600' : ($transaction->status === 'rejected' ? 'text-red-600' : 'text-yellow-600') }}">{{ $transaction->status }}</span></p>
             
+            @if($transaction->status === 'approved')
             <button onclick="window.print()" class="mt-6 bg-gray-800 hover:bg-black text-white px-6 py-2 rounded-lg font-bold transition-all print:hidden flex items-center gap-2 mx-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 012-2m-8 2h8a2 2 0 012 2v4a2 2 0 00-2 2h-6a2 2 0 00-2-2v-9a2 2 0 00-2-2h-3m-4 0H5a2 2 0 00-2 2v4a2 2 0 01-2 2" />
                 </svg>
                 Cetak Invoice
             </button>
+            @endif
         </div>
     </div>
 </body>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\Transaction;
+use App\Services\FanskuService;
 use App\Services\TripayService;
 use App\Traits\HoneypotTrait;
 use Illuminate\Support\Facades\Log;
@@ -52,24 +53,33 @@ class CheckoutController extends Controller
             $finalAmount = 0;
             $customCode = null;
             
-            // Payment Method Logic
+            // Payment Method Logic (Fansku QRIS primary — DB methods hidden temporarily)
             $paymentMethodName = $validated['payment_method'];
-            $paymentSettings = app(\App\Settings\PaymentSettings::class);
-            $selectedMethod = collect($paymentSettings->payment_methods)
-                ->firstWhere('name', $paymentMethodName);
+            $selectedMethod = null;
+            $details = '';
 
-            if (!$selectedMethod) {
-                // Fallback or Error? Let's verify instructions exist
-                 throw new \Exception("Invalid payment method selected.");
-            }
+            $isFanskuMethod = in_array($paymentMethodName, ['QRIS (Fansku)', 'FANSKU_QRIS', 'QRIS Otomatis'], true);
 
-            // Format Payment Details for storage
-            $details = "";
-            if (!empty($selectedMethod['account_number'])) {
-                $details .= "No: " . $selectedMethod['account_number'];
-            }
-            if (!empty($selectedMethod['account_holder'])) {
-                $details .= " (" . $selectedMethod['account_holder'] . ")";
+            if ($isFanskuMethod && config('fansku.is_enabled', false)) {
+                // Bypass DB lookup — QRIS otomatis via Fansku
+                $details = 'QRIS otomatis via Fansku';
+            } else {
+                $paymentSettings = app(\App\Settings\PaymentSettings::class);
+                $selectedMethod = collect($paymentSettings->payment_methods)
+                    ->firstWhere('name', $paymentMethodName);
+
+                if (!$selectedMethod) {
+                    // Fallback or Error? Let's verify instructions exist
+                     throw new \Exception("Invalid payment method selected.");
+                }
+
+                // Format Payment Details for storage
+                if (!empty($selectedMethod['account_number'])) {
+                    $details .= "No: " . $selectedMethod['account_number'];
+                }
+                if (!empty($selectedMethod['account_holder'])) {
+                    $details .= " (" . $selectedMethod['account_holder'] . ")";
+                }
             }
             
             // Checks
@@ -184,8 +194,25 @@ class CheckoutController extends Controller
                 'message'          => $message,
             ];
 
+            // Fansku QRIS (primary gateway) — before Tripay/manual fallback.
+            // Conditions: flag on + email contact + QRIS active.
+            if ($this->shouldUseFansku($transaction)) {
+                try {
+                    $fanskuData = $this->createFanskuSupport($transaction);
+                    $responseData['fansku'] = $fanskuData;
+                    $message .= ' Scan QRIS to complete payment.';
+                } catch (\Exception $e) {
+                    Log::error('Checkout: Fansku support creation failed, falling back', [
+                        'transaction' => $transaction->code,
+                        'error'       => $e->getMessage(),
+                    ]);
+                    // Don't throw — fall through to Tripay/manual below.
+                }
+            }
+
             // 4.1 TriPay integration — call after amount calculation if enabled
-            if (config('tripay.is_enabled', false)) {
+            // Skipped when Fansku already produced a QR.
+            if (! isset($responseData['fansku']) && config('tripay.is_enabled', false)) {
                 try {
                     $tripayData = $this->createTripayTransaction($transaction, $paymentMethodName, $request);
                     // 4.3 Return tripay pay_code / checkout_url in response
@@ -207,6 +234,68 @@ class CheckoutController extends Controller
             Log::error('Checkout Error: ' . $e->getMessage());
             return $this->error($e->getMessage(), 400); // Return 400 for bad request logic
         }
+    }
+
+    /**
+     * Check whether this transaction qualifies for Fansku QRIS auto-payment.
+     * Requires: flag on + email contact + QRIS active on Fansku side.
+     */
+    protected function shouldUseFansku(Transaction $transaction): bool
+    {
+        if (! config('fansku.is_enabled', false)) {
+            return false;
+        }
+
+        if (! str_contains($transaction->customer_contact ?? '', '@')) {
+            return false;
+        }
+
+        if ((int) $transaction->amount < 1) {
+            return false;
+        }
+
+        try {
+            return app(FanskuService::class)->isQrisActive();
+        } catch (\Exception $e) {
+            Log::warning('Checkout: Fansku QRIS check failed, using fallback', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Create Fansku QRIS support and store identifiers on the transaction.
+     * Local amount stays as revenue; total_amount (incl. fee) is shown on QR.
+     */
+    protected function createFanskuSupport(Transaction $transaction): array
+    {
+        $fansku = app(FanskuService::class);
+        $contact = $transaction->customer_contact;
+
+        $support = $fansku->createSupport([
+            'name' => explode('@', $contact)[0],
+            'email' => $contact,
+            'message' => "KomikTap {$transaction->plan_name} ({$transaction->code})",
+            'amount' => (int) $transaction->amount,
+            'payment_method' => 'qris',
+        ]);
+
+        $transaction->update([
+            'fansku_support_id' => $support['support_id'] ?? null,
+            'fansku_status' => 'pending',
+            'fansku_raw_response' => $support['raw'] ?? null,
+            'payment_method' => 'QRIS (Fansku)',
+        ]);
+
+        return [
+            'support_id' => $support['support_id'] ?? null,
+            'qr_string' => $support['qr_string'] ?? null,
+            'amount' => $support['amount'] ?? (int) $transaction->amount,
+            'fee' => $support['fee'] ?? 0,
+            'total_amount' => $support['total_amount'] ?? (int) $transaction->amount,
+        ];
     }
 
     /**

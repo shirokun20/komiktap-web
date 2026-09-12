@@ -12,6 +12,9 @@ Terima kasih atas pembelian Anda. Berikut detail transaksi Anda:
 **Total Dibayar:** IDR {{ number_format($transaction->amount, 0, ',', '.') }}  
 **Status:** {{ ucfirst($transaction->status) }}
 
+@if($transaction->fansku_support_id)
+**Fansku Reference:** {{ $transaction->fansku_code ?? $transaction->fansku_support_id }}  
+@endif
 @if($transaction->tripay_reference)
 **TriPay Reference:** {{ $transaction->tripay_reference }}  
 @endif

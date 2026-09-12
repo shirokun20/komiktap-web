@@ -47,9 +47,9 @@ class RateLimitTest extends TestCase
 
     public function test_checkout_rate_limit_returns_429_after_limit_exceeded(): void
     {
-        // Override to a very tight limit: 2 per minute for testing
-        config(['tripay.rate_limit.checkout' => '2,1']);
-
+        // NOTE: throttle: parameter is resolved at route registration, so
+        // overriding tripay.rate_limit.checkout here has no effect.
+        // Default is 5,10 → first 5 succeed, 6th is rate limited.
         $payload = [
             'plan_name'        => 'Starter',
             'device_quota'     => 1,
@@ -58,11 +58,12 @@ class RateLimitTest extends TestCase
             'payment_method'   => 'BRIVA',
         ];
 
-        // First two requests should succeed
-        $this->postJson('/api/checkout', $payload)->assertStatus(200);
-        $this->postJson('/api/checkout', $payload)->assertStatus(200);
+        // First five requests should succeed (default limit 5 per 10 min)
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/checkout', $payload)->assertStatus(200);
+        }
 
-        // Third should be rate limited
+        // Sixth should be rate limited
         $this->postJson('/api/checkout', $payload)->assertStatus(429);
     }
 
@@ -72,7 +73,11 @@ class RateLimitTest extends TestCase
 
     public function test_download_rate_limit_returns_429_after_limit_exceeded(): void
     {
-        config(['tripay.rate_limit.download' => '2,1']);
+        // NOTE: throttle: parameter is resolved at route registration, so
+        // overriding tripay.rate_limit.download here has no effect.
+        // Default is 10,10 → first 10 succeed, 11th is rate limited.
+        // Create the dummy file so requests reach the throttle (not 500).
+        \Illuminate\Support\Facades\Storage::disk('public')->put('apk/test.apk', 'dummy-apk');
 
         // Create a fake APK version
         $apk = \App\Models\ApkVersion::create([
@@ -89,12 +94,16 @@ class RateLimitTest extends TestCase
 
         $url = "/download/{$apk->version_code}?expires={$expires}&signature={$signature}";
 
-        // First two requests — may fail with 404 (file not on disk) but not 429
-        $this->get($url);
-        $this->get($url);
+        // First ten requests succeed (default limit 10 per 10 min)
+        for ($i = 0; $i < 10; $i++) {
+            $this->get($url)->assertStatus(200);
+        }
 
-        // Third should be rate limited
+        // Eleventh should be rate limited
         $response = $this->get($url);
         $response->assertStatus(429);
+
+        // Cleanup dummy file so other tests see the missing-file path
+        \Illuminate\Support\Facades\Storage::disk('public')->delete('apk/test.apk');
     }
 }

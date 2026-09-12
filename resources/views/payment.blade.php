@@ -419,8 +419,8 @@
                         <p id="voucherMessage" class="text-xs mt-2 hidden"></p>
                     </div>
 
-                    <!-- Payment Methods List -->
-                    <div class="glass-card rounded-2xl p-5">
+                    <!-- Payment Methods List (hidden — Fansku QRIS otomatis) -->
+                    <div class="glass-card rounded-2xl p-5 hidden" id="methodsCard">
                         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Metode Pembayaran
                         </p>
 
@@ -446,8 +446,24 @@
                 <div class="lg:col-span-3">
                     <div class="glass-card rounded-2xl p-6 lg:sticky lg:top-24 detail-glass-card">
 
+                        <!-- QRIS otomatis info -->
+                        <div id="fanskuAutoInfo" class="hidden mb-5">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg" style="background: #7c3aed22; border: 1.5px solid #7c3aed44;">
+                                    <i class="fas fa-qrcode text-xl" style="color: #7c3aed;"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-white font-bold text-lg leading-tight">QRIS Otomatis</h2>
+                                    <div class="flex items-center gap-1.5 mt-1">
+                                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                                        <span class="text-gray-400 text-xs">Aktif &amp; Tersedia</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Placeholder state -->
-                        <div id="placeholderState" class="text-center py-12">
+                        <div id="placeholderState" class="text-center py-12 hidden">
                             <div
                                 class="w-20 h-20 rounded-2xl bg-white/4 border border-white/6 flex items-center justify-center mx-auto mb-4">
                                 <i class="fas fa-credit-card text-3xl text-gray-600"></i>
@@ -458,25 +474,23 @@
                         </div>
 
                         <!-- Detail panels (populated by JS) -->
-                        <div id="detailPanels"></div>
+                        <div id="detailPanels" class="hidden"></div>
 
                         <!-- Confirmation Form -->
-                        <div id="confirmationForm" class="hidden mt-6 pt-6 border-t border-white/6">
-                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Konfirmasi
-                                Pembayaran</p>
+                        <div id="confirmationForm" class="mt-0 pt-0 border-t-0">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Data Pembeli</p>
 
                             <div class="space-y-3 mb-4">
                                 <div>
-                                    <label class="text-gray-400 text-xs block mb-1.5 font-medium">Nomor WA / Email <span
+                                    <label class="text-gray-400 text-xs block mb-1.5 font-medium">Email <span
                                             class="text-[#ff7900]">*</span></label>
-                                    <input type="text" id="waInput" placeholder="cth: 08123456789 atau email@domain.com"
+                                    <input type="email" id="waInput" placeholder="cth: email@domain.com"
                                         class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all">
                                 </div>
 
-                                <div>
+                                <div class="hidden">
                                     <label class="text-gray-400 text-xs block mb-1.5 font-medium">
                                         3-5 Digit Terakhir Referensi Transfer
-                                        <span class="text-[#ff7900]">*</span>
                                     </label>
                                     <input type="text" id="proofInput" maxlength="8" placeholder="cth: 12345"
                                         class="w-full bg-black/20 border border-white/10 rounded-xl mb-3 px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all font-mono tracking-widest mb-2">
@@ -486,13 +500,21 @@
                                         tabindex="-1" autocomplete="off" aria-hidden="true">
                                     <button onclick="submitOrder()" id="submitBtn"
                                         class="btn-primary w-full text-white px-5 py-3 rounded-xl text-sm font-bold">
-                                        Konfirmasi
+                                        Buat Kode QRIS
                                     </button>
                                     <p class="text-gray-600 text-[11px] mt-2 leading-relaxed">
                                         <i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i>
-                                        Masukkan 3-5 digit terakhir nomor referensi/struk untuk verifikasi pesanan Anda.
+                                        QRIS otomatis via Fansku — tanpa upload bukti transfer.
                                     </p>
                                 </div>
+                                <button onclick="submitOrder()" id="submitBtnVisible"
+                                    class="btn-primary w-full text-white px-5 py-3 rounded-xl text-sm font-bold">
+                                    Buat Kode QRIS
+                                </button>
+                                <p class="text-gray-600 text-[11px] mt-2 leading-relaxed">
+                                    <i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i>
+                                    QRIS otomatis via Fansku — tanpa upload bukti transfer.
+                                </p>
                             </div>
 
                             <!-- Security badge -->
@@ -564,7 +586,7 @@
         let VOUCHER_CODE = '';
         let FINAL_AMOUNT = PLAN_AMOUNT;
 
-        const fmt = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumSignificantDigits: 4 }).format(n);
+        const fmt = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Math.round(Number(n) || 0));
 
         // ====================================
         // Init
@@ -604,6 +626,13 @@
                 const res = await fetch('/api/payment-methods?type=order');
                 const json = await res.json();
                 document.getElementById('methodsSkeleton').classList.add('hidden');
+                // Fansku QRIS primary — hide DB manual methods temporarily.
+                if (json.status === 'success' && json.data?.fansku_enabled) {
+                    PAYMENT_METHODS = [{ name: 'QRIS Otomatis', account_number: null, qris_image_path: null, instructions: '', _fansku: true }];
+                    renderMethods();
+                    selectMethod(0);
+                    return;
+                }
                 if (json.status === 'success' && json.data.is_enabled && json.data.payment_methods?.length) {
                     PAYMENT_METHODS = json.data.payment_methods;
                     renderMethods();
@@ -972,25 +1001,19 @@
         }
 
         // ====================================
-        // Submit Order
+        // Submit Order (Fansku QRIS otomatis — no method selection)
         // ====================================
         async function submitOrder() {
-            const proof = document.getElementById('proofInput').value.trim();
+            const proof = document.getElementById('proofInput')?.value.trim() || '';
             const wa = document.getElementById('waInput').value.trim();
-            const btn = document.getElementById('submitBtn');
+            const btn = document.getElementById('submitBtnVisible') || document.getElementById('submitBtn');
 
-            if (!wa) {
-                showToast('Nomor WA / Email wajib diisi!');
+            if (!wa || !wa.includes('@')) {
+                showToast('Email valid wajib diisi untuk QRIS otomatis!');
                 document.getElementById('waInput').focus();
                 return;
             }
 
-            if (SELECTED_INDEX < 0) {
-                showToast('Pilih metode pembayaran terlebih dahulu!');
-                return;
-            }
-
-            const method = PAYMENT_METHODS[SELECTED_INDEX];
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             setStep(3);
@@ -1002,7 +1025,7 @@
                     duration_months: PLAN_DURATION || 1,
                     amount: FINAL_AMOUNT,
                     customer_contact: wa,
-                    payment_method: method?.name || '',
+                    payment_method: 'QRIS Otomatis',
                     voucher_code: VOUCHER_CODE || '',
                     _hp_website: document.getElementById('_hp_website')?.value || '',
                 };
@@ -1021,8 +1044,11 @@
                 const json = await res.json();
 
                 if (json.status === 'success') {
-                    // If TriPay data returned, show payment code panel
-                    if (json.data?.tripay) {
+                    // Fansku QRIS (primary) takes precedence over TriPay/manual.
+                    if (json.data?.fansku) {
+                        showFanskuPaymentPanel(json.data.fansku, json.data.transaction_code);
+                    } else if (json.data?.tripay) {
+                        // If TriPay data returned, show payment code panel
                         showTripayPaymentPanel(json.data.tripay, json.data.transaction_code);
                     } else {
                         window.location.href = '/success/' + json.data.transaction_code;
@@ -1030,15 +1056,89 @@
                 } else {
                     showToast('Gagal: ' + (json.data?.message || 'Terjadi kesalahan.'));
                     btn.disabled = false;
-                    btn.innerHTML = 'Konfirmasi';
+                    btn.innerHTML = 'Buat Kode QRIS';
                     setStep(2);
                 }
             } catch (e) {
                 console.error(e);
                 showToast('Gagal mengirim data, coba lagi.');
                 btn.disabled = false;
-                btn.innerHTML = 'Konfirmasi';
+                btn.innerHTML = 'Buat Kode QRIS';
                 setStep(2);
+            }
+        }
+
+        // ====================================
+        // Fansku QRIS Payment Panel (primary gateway)
+        // ====================================
+        function showFanskuPaymentPanel(fansku, transactionCode) {
+            const confirmForm = document.getElementById('confirmationForm');
+            const amount = fansku.amount ?? 0;
+            const fee = fansku.fee ?? 0;
+            const total = fansku.total_amount ?? 0;
+            // Hide manual panels so only the Fansku QR shows (no stacked/bentrok UI)
+            document.getElementById('placeholderState')?.classList.add('hidden');
+            document.getElementById('detailPanels')?.classList.add('hidden');
+            confirmForm.classList.remove('hidden');
+            confirmForm.classList.remove('mt-6', 'pt-6', 'border-t');
+            confirmForm.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 text-green-400 text-sm font-semibold mb-2">
+                        <i class="fas fa-check-circle"></i> Pesanan dibuat! Scan QRIS di bawah untuk membayar.
+                    </div>
+
+                    <div class="bg-white/3 rounded-xl px-4 py-3 border border-white/6 space-y-2 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Nominal Pesanan</span>
+                            <span class="text-white font-semibold">${fmt(amount)}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400">Biaya Layanan QRIS (0,6%)</span>
+                            <span class="text-white font-semibold">${fmt(fee)}</span>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-white/6">
+                            <span class="text-gray-400">Total Bayar</span>
+                            <span class="text-[#ff7900] font-bold text-lg">${fmt(total)}</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-[11px] leading-relaxed">
+                        <i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i>
+                        Biaya layanan diteruskan ke penyedia pembayaran (Fansku/Xendit), bukan tambahan dari KomikTap.
+                    </p>
+
+                    ${fansku.qr_string ? `
+                    <div class="flex flex-col items-center gap-2">
+                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase">Scan QRIS (Fansku)</p>
+                        <div class="bg-white p-3 rounded-2xl shadow-xl inline-block" id="fanskuQrContainer"></div>
+                        <p class="text-center text-gray-600 text-xs mt-1"><i class="fas fa-qrcode mr-1"></i> Scan dengan aplikasi e-Wallet / m-banking</p>
+                    </div>
+                    ` : `
+                    <p class="text-red-400 text-sm text-center">QR tidak tersedia. Hubungi admin.</p>
+                    `}
+
+                    <div class="text-xs text-gray-500 text-center font-mono break-all">Ref: ${transactionCode}</div>
+
+                    <a href="/success/${transactionCode}"
+                        class="block w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors mt-2">
+                        Sudah bayar? Lihat status pesanan →
+                    </a>
+                </div>
+            `;
+
+            if (fansku.qr_string) {
+                setTimeout(() => {
+                    const container = document.getElementById('fanskuQrContainer');
+                    if (container) {
+                        new QRCode(container, {
+                            text: fansku.qr_string,
+                            width: 220,
+                            height: 220,
+                            colorDark: '#000000',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    }
+                }, 100);
             }
         }
 

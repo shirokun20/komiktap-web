@@ -47,6 +47,7 @@ class CheckoutTripayTest extends TestCase
     public function test_checkout_with_tripay_enabled_stores_reference(): void
     {
         config([
+            'fansku.is_enabled'    => false,
             'tripay.is_enabled'    => true,
             'tripay.api_key'       => 'test-api-key',
             'tripay.private_key'   => 'test-private-key',

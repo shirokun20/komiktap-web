@@ -17,6 +17,8 @@ class Transaction extends Model
         'tripay_raw_response' => 'array',
         'tripay_paid_at'      => 'datetime',
         'tripay_expired_at'   => 'datetime',
+        'fansku_raw_response' => 'array',
+        'fansku_paid_at'      => 'datetime',
     ];
 
     public function getActivitylogOptions(): LogOptions

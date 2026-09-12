@@ -41,14 +41,16 @@ class DownloadSignedUrlTest extends TestCase
 
     public function test_valid_signed_url_passes_validation(): void
     {
+        // Ensure no leftover dummy file from other tests leaks in —
+        // this test asserts the missing-file path (404), not a download.
+        \Illuminate\Support\Facades\Storage::disk('public')->delete('apk/test.apk');
+
         $apk = $this->makeApk();
         $url = $this->signedUrl($apk->version_code);
 
-        // File won't exist on disk in test env, but we should NOT get 403/410/redirect
+        // File won't exist on disk in test env → 404, but NOT 403/410/redirect
         $response = $this->get($url);
-        $this->assertNotEquals(403, $response->status());
-        $this->assertNotEquals(410, $response->status());
-        $this->assertNotEquals(302, $response->status()); // no redirect to download page
+        $response->assertStatus(404);
     }
 
     // -------------------------------------------------------

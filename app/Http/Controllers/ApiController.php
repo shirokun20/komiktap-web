@@ -41,6 +41,15 @@ class ApiController extends Controller
 
     public function paymentMethods(Request $request, \App\Settings\PaymentSettings $settings)
     {
+        // Fansku QRIS primary — hide DB manual methods temporarily.
+        if (config('fansku.is_enabled', false)) {
+            return $this->success([
+                'is_enabled' => $settings->is_enabled,
+                'payment_methods' => [],
+                'fansku_enabled' => true,
+            ]);
+        }
+
         $type = $request->query('type', 'all'); // 'all', 'order', 'donation'
 
         $methods = collect($settings->payment_methods)
@@ -67,7 +76,8 @@ class ApiController extends Controller
 
         return $this->success([
             'is_enabled' => $settings->is_enabled,
-            'payment_methods' => $methods
+            'payment_methods' => $methods,
+            'fansku_enabled' => false,
         ]);
     }
 
