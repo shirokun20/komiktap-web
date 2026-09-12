@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Transaction;
 use App\Settings\PaymentSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -456,5 +457,153 @@ class FanskuTest extends TestCase
             'customer_contact' => 'buyer@example.com',
             'payment_method' => 'QRIS Manual',
         ])->assertStatus(400);
+    }
+
+    // -------------------------------------------------------
+    // Dedicated Fansku endpoint: POST /api/checkout/fansku
+    // -------------------------------------------------------
+
+    public function test_fansku_endpoint_returns_qr(): void
+    {
+        Cache::forget('fansku:payment-methods');
+        $this->fakeQrisActive();
+
+        $response = $this->postJson('/api/checkout/fansku', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'buyer@example.com',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.fansku.support_id', 'SUP-001')
+            ->assertJsonPath('data.fansku.qr_string', 'qr-abc');
+
+        $tx = Transaction::first();
+        $this->assertSame('SUP-001', $tx->fansku_support_id);
+        $this->assertSame('QRIS (Fansku)', $tx->payment_method);
+    }
+
+    public function test_fansku_endpoint_rejects_non_email(): void
+    {
+        $this->postJson('/api/checkout/fansku', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => '08123456789',
+        ])->assertStatus(422);
+
+        $this->assertSame(0, Transaction::count());
+    }
+
+    public function test_fansku_endpoint_rejects_when_disabled(): void
+    {
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->fansku_enabled = false;
+        $gateway->save();
+
+        $this->postJson('/api/checkout/fansku', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'buyer@example.com',
+        ])->assertStatus(400);
+
+        $this->assertSame(0, Transaction::count());
+    }
+
+    public function test_fansku_endpoint_qris_inactive_leaves_no_junk(): void
+    {
+        Cache::forget('fansku:payment-methods');
+        Http::fake([
+            'api.fansku.id/api/v1/public-api/payment-methods' => Http::response([
+                'success' => true,
+                'message' => 'ok',
+                'data' => [
+                    [
+                        'slug' => 'pembayaran-qris',
+                        'payment_methods' => [
+                            ['slug' => 'qris', 'name' => 'QRIS', 'is_active' => false],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->postJson('/api/checkout/fansku', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'buyer@example.com',
+        ])->assertStatus(400);
+
+        $this->assertSame(0, Transaction::count());
+        Cache::forget('fansku:payment-methods');
+    }
+
+    public function test_fansku_endpoint_supports_failure_returns_502_and_no_junk(): void
+    {
+        Cache::forget('fansku:payment-methods');
+        Http::fake([
+            'api.fansku.id/api/v1/public-api/payment-methods' => Http::response([
+                'success' => true,
+                'message' => 'ok',
+                'data' => [
+                    [
+                        'slug' => 'pembayaran-qris',
+                        'payment_methods' => [
+                            ['slug' => 'qris', 'name' => 'QRIS', 'is_active' => true],
+                        ],
+                    ],
+                ],
+            ]),
+            'api.fansku.id/api/v1/public-api/supports' => Http::response([
+                'success' => false,
+                'message' => 'upstream boom',
+            ], 500),
+        ]);
+
+        $this->postJson('/api/checkout/fansku', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'buyer@example.com',
+        ])->assertStatus(502);
+
+        $this->assertSame(0, Transaction::count());
+        Cache::forget('fansku:payment-methods');
+    }
+
+    public function test_fansku_endpoint_donation(): void
+    {
+        Cache::forget('fansku:payment-methods');
+        $this->fakeQrisActive();
+
+        $response = $this->postJson('/api/checkout/fansku', [
+            'plan_name' => 'Donasi',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'amount' => 25000,
+            'customer_contact' => 'donor@example.com',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.fansku.qr_string', 'qr-abc');
+
+        $this->assertStringStartsWith('KURON-PEDULI-', Transaction::first()->code);
+    }
+
+    public function test_fansku_endpoint_honeypot_returns_fake_success(): void
+    {
+        $response = $this->postJson('/api/checkout/fansku', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'buyer@example.com',
+            '_hp_website' => 'http://spam.example',
+        ]);
+
+        $response->assertOk();
+        $this->assertSame(0, Transaction::count());
     }
 }

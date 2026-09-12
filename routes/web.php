@@ -59,6 +59,27 @@ Route::get('/bayar', function () {
     return view('payment');
 })->name('payment.index');
 
+// Dedicated reload-safe QRIS payment page. QR + amounts are rendered from
+// stored server data, so refresh never loses them. Non-QRIS or finished
+// transactions go to the success page instead.
+Route::get('/bayar/qris/{transaction:code}', function (\App\Models\Transaction $transaction) {
+    if (! $transaction->fansku_support_id || $transaction->status !== 'pending') {
+        return redirect()->route('checkout.success', $transaction);
+    }
+
+    $raw = $transaction->fansku_raw_response ?? [];
+    if (! is_array($raw)) {
+        $raw = [];
+    }
+
+    return view('qris-payment', [
+        'transaction' => $transaction,
+        'qrString' => app(\App\Services\FanskuService::class)->extractQrString($raw),
+        'fee' => $raw['fee'] ?? 0,
+        'total' => $raw['total_amount'] ?? $transaction->amount,
+    ]);
+})->name('payment.qris');
+
 Route::get('/download', function () {
     $apkVersions = \App\Models\ApkVersion::where('is_active', true)->orderBy('created_at', 'desc')->get();
     $latestApk = $apkVersions->first();

@@ -409,11 +409,10 @@ class TransactionResource extends Resource
                     ->modalDescription('Are you sure? This will generate a License Key automatically.')
                     ->visible(fn (Transaction $record) => $record->status === 'pending')
                     ->action(function (Transaction $record) {
+                        $license = app(\App\Services\TransactionApprovalService::class)->approve($record);
+
                         // Check if it is a Donation
                         if (str_starts_with($record->code, 'KURON-PEDULI')) {
-                             $record->update([
-                                'status' => 'approved',
-                            ]);
                              \Filament\Notifications\Notification::make()
                                 ->title('Donation Accepted')
                                 ->body("Transaction marked as approved. No license generated.")
@@ -422,32 +421,9 @@ class TransactionResource extends Resource
                              return;
                         }
 
-                        // 1. Generate License with "KURON" Pattern
-                        // Format: KURON-XXXX-XXXX-XXXX
-                        $random = strtoupper(\Illuminate\Support\Str::random(12));
-                        $formatted = implode('-', str_split($random, 4));
-                        $key = "KURON-{$formatted}"; // Example: KURON-A1B2-C3D4
-
-                        $expiresAt = now()->addMonths($record->duration_months);
-                        
-                        $license = \App\Models\License::create([
-                            'key' => $key,
-                            'status' => 'active',
-                            'max_devices' => $record->device_quota,
-                            'expires_at' => $expiresAt,
-                            'customer_contact' => $record->customer_contact,
-                        ]);
-
-                        // 2. Update Transaction
-                        $record->update([
-                            'status' => 'approved',
-                            'license_id' => $license->id, // Consider making this nullable in DB if not already
-                        ]);
-
-                        // 3. Notify
                         \Filament\Notifications\Notification::make()
                             ->title('Transaction Approved')
-                            ->body("License generated: {$key}")
+                            ->body("License generated: {$license->key}")
                             ->success()
                             ->send();
                     }),
@@ -460,8 +436,8 @@ class TransactionResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (Transaction $record) => $record->status === 'pending')
                     ->action(function (Transaction $record) {
-                        $record->update(['status' => 'rejected']);
-                        
+                        app(\App\Services\TransactionApprovalService::class)->reject($record);
+
                         \Filament\Notifications\Notification::make()
                             ->title('Transaction Rejected')
                             ->danger()
@@ -470,6 +446,72 @@ class TransactionResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('bulk_approve')
+                        ->label('Approve selected')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Approve selected transactions')
+                        ->modalDescription('Only pending transactions will be approved. License keys are generated automatically for orders; donations get no license.')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $approved = 0;
+                            $skipped = 0;
+                            $failed = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->status !== 'pending') {
+                                    $skipped++;
+                                    continue;
+                                }
+
+                                try {
+                                    app(\App\Services\TransactionApprovalService::class)->approve($record);
+                                    $approved++;
+                                } catch (\Exception $e) {
+                                    $failed++;
+                                }
+                            }
+
+                            $notification = \Filament\Notifications\Notification::make()
+                                ->title('Bulk approve completed')
+                                ->body("{$approved} approved • {$skipped} skipped (not pending) • {$failed} failed");
+
+                            $failed > 0 ? $notification->warning()->send() : $notification->success()->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\BulkAction::make('bulk_reject')
+                        ->label('Reject selected')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Reject selected transactions')
+                        ->modalDescription('Only pending transactions will be rejected.')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $rejected = 0;
+                            $skipped = 0;
+                            $failed = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->status !== 'pending') {
+                                    $skipped++;
+                                    continue;
+                                }
+
+                                try {
+                                    app(\App\Services\TransactionApprovalService::class)->reject($record);
+                                    $rejected++;
+                                } catch (\Exception $e) {
+                                    $failed++;
+                                }
+                            }
+
+                            $notification = \Filament\Notifications\Notification::make()
+                                ->title('Bulk reject completed')
+                                ->body("{$rejected} rejected • {$skipped} skipped (not pending) • {$failed} failed");
+
+                            $failed > 0 ? $notification->warning()->send() : $notification->success()->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

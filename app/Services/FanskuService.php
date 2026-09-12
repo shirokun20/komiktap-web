@@ -90,8 +90,9 @@ class FanskuService
 
     /**
      * Extract QR string from support payment actions.
+     * Public so the QR page / status API can re-render it from stored data.
      */
-    protected function extractQrString(array $support): ?string
+    public function extractQrString(array $support): ?string
     {
         $actions = $support['payment']['actions'] ?? [];
 
