@@ -53,17 +53,22 @@ class CheckoutController extends Controller
             $finalAmount = 0;
             $customCode = null;
             
-            // Payment Method Logic (Fansku QRIS primary — DB methods hidden temporarily)
+            // Payment Method Logic (gateway toggles in admin Payment Configuration)
             $paymentMethodName = $validated['payment_method'];
             $selectedMethod = null;
             $details = '';
+            $gateway = app(\App\Settings\PaymentGatewaySettings::class);
 
             $isFanskuMethod = in_array($paymentMethodName, ['QRIS (Fansku)', 'FANSKU_QRIS', 'QRIS Otomatis'], true);
 
-            if ($isFanskuMethod && config('fansku.is_enabled', false)) {
+            if ($isFanskuMethod && $gateway->fansku_enabled) {
                 // Bypass DB lookup — QRIS otomatis via Fansku
                 $details = 'QRIS otomatis via Fansku';
             } else {
+                if (! $gateway->manual_enabled) {
+                    throw new \Exception("Metode pembayaran manual sedang nonaktif.");
+                }
+
                 $paymentSettings = app(\App\Settings\PaymentSettings::class);
                 $selectedMethod = collect($paymentSettings->payment_methods)
                     ->firstWhere('name', $paymentMethodName);
@@ -238,11 +243,11 @@ class CheckoutController extends Controller
 
     /**
      * Check whether this transaction qualifies for Fansku QRIS auto-payment.
-     * Requires: flag on + email contact + QRIS active on Fansku side.
+     * Requires: admin toggle on + email contact + QRIS active on Fansku side.
      */
     protected function shouldUseFansku(Transaction $transaction): bool
     {
-        if (! config('fansku.is_enabled', false)) {
+        if (! app(\App\Settings\PaymentGatewaySettings::class)->fansku_enabled) {
             return false;
         }
 

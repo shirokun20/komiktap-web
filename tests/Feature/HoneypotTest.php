@@ -34,6 +34,11 @@ class HoneypotTest extends TestCase
         \App\Models\Plan::create(['name' => 'Starter', 'price' => 50000]);
 
         config(['tripay.is_enabled' => false]);
+
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->fansku_enabled = false;
+        $gateway->manual_enabled = true;
+        $gateway->save();
     }
 
     // -------------------------------------------------------

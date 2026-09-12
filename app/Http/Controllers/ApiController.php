@@ -41,8 +41,10 @@ class ApiController extends Controller
 
     public function paymentMethods(Request $request, \App\Settings\PaymentSettings $settings)
     {
-        // Fansku QRIS primary — hide DB manual methods temporarily.
-        if (config('fansku.is_enabled', false)) {
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+
+        // Fansku QRIS primary — hide DB manual methods unless manual enabled.
+        if ($gateway->fansku_enabled && ! $gateway->manual_enabled) {
             return $this->success([
                 'is_enabled' => $settings->is_enabled,
                 'payment_methods' => [],

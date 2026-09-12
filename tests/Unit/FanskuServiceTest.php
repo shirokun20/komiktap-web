@@ -182,4 +182,72 @@ class FanskuServiceTest extends TestCase
     {
         $this->assertFalse($this->service->validateWebhook('{}', ''));
     }
+
+    // -------------------------------------------------------
+    // getBalance / getSupportsCount
+    // -------------------------------------------------------
+
+    public function test_get_balance_returns_available_and_pending(): void
+    {
+        Http::fake([
+            'api.fansku.id/api/v1/public-api/balance' => Http::response([
+                'success' => true,
+                'message' => 'Balance berhasil diambil',
+                'data' => ['available_balance' => 6750000, 'pending_balance' => 250000],
+            ]),
+        ]);
+
+        $result = $this->service->getBalance();
+
+        $this->assertSame(6750000, $result['available_balance']);
+        $this->assertSame(250000, $result['pending_balance']);
+    }
+
+    public function test_get_balance_throws_on_api_error(): void
+    {
+        Http::fake([
+            'api.fansku.id/api/v1/public-api/balance' => Http::response([
+                'success' => false,
+                'message' => 'boom',
+            ], 500),
+        ]);
+
+        $this->expectException(\Exception::class);
+        $this->service->getBalance();
+    }
+
+    public function test_get_supports_count_returns_totals(): void
+    {
+        Http::fake([
+            'api.fansku.id/api/v1/public-api/supports/count' => Http::response([
+                'success' => true,
+                'message' => 'ok',
+                'data' => ['total_supports' => 150, 'total_amount' => 7500000, 'total_creator_earning' => 6750000],
+            ]),
+        ]);
+
+        $result = $this->service->getSupportsCount();
+
+        $this->assertSame(150, $result['total_supports']);
+        $this->assertSame(6750000, $result['total_creator_earning']);
+    }
+
+    public function test_get_supports_returns_paginated_history(): void
+    {
+        Http::fake([
+            'api.fansku.id/api/v1/public-api/supports*' => Http::response([
+                'success' => true,
+                'message' => 'ok',
+                'data' => [
+                    'data' => [['id' => 'aB3xK9', 'status' => 'paid']],
+                    'meta' => ['current_page' => 1, 'total' => 1],
+                ],
+            ]),
+        ]);
+
+        $result = $this->service->getSupports(1, 10);
+
+        $this->assertCount(1, $result['data']);
+        $this->assertSame(1, $result['meta']['current_page']);
+    }
 }

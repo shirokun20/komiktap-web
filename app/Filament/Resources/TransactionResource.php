@@ -129,6 +129,33 @@ class TransactionResource extends Resource
                             ->content(fn (Transaction $record): string => $record->license?->key ?? 'No License Generated'),
                     ])->columns(2),
 
+                Forms\Components\Section::make('Fansku Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('fansku_support_id')
+                            ->label('Fansku Support ID')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('—'),
+                        Forms\Components\TextInput::make('fansku_code')
+                            ->label('Fansku Code (INV-...)')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('—'),
+                        Forms\Components\TextInput::make('fansku_status')
+                            ->label('Fansku Status')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('—'),
+                        Forms\Components\Placeholder::make('fansku_paid_at')
+                            ->label('Paid At')
+                            ->content(fn (Transaction $record): string => $record->fansku_paid_at
+                                ? \Carbon\Carbon::parse($record->fansku_paid_at)->format('d M Y H:i')
+                                : '—'),
+                    ])
+                    ->columns(2)
+                    ->collapsible()
+                    ->collapsed(),
+
                 Forms\Components\Section::make('TriPay Information')
                     ->schema([
                         Forms\Components\TextInput::make('tripay_reference')
@@ -231,6 +258,35 @@ class TransactionResource extends Resource
                         'pending' => 'warning',
                         default => 'gray',
                     }),
+                Tables\Columns\TextColumn::make('fansku_support_id')
+                    ->label('Fansku ID')
+                    ->searchable()
+                    ->copyable()
+                    ->fontFamily('mono')
+                    ->placeholder('-')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('fansku_code')
+                    ->label('Fansku Code')
+                    ->searchable()
+                    ->copyable()
+                    ->fontFamily('mono')
+                    ->placeholder('-')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('fansku_status')
+                    ->label('Fansku Status')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'paid'    => 'success',
+                        'pending' => 'warning',
+                        default   => 'gray',
+                    })
+                    ->placeholder('-')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('fansku_paid_at')
+                    ->label('Fansku Paid At')
+                    ->dateTime()
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('tripay_reference')
                     ->label('TriPay Ref')
                     ->searchable()
@@ -270,7 +326,21 @@ class TransactionResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ]),
+                Tables\Filters\SelectFilter::make('fansku_status')
+                    ->label('Fansku Status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'paid' => 'Paid',
+                    ]),
+                Tables\Filters\Filter::make('fansku_only')
+                    ->label('Fansku QRIS only')
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('fansku_support_id')),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([

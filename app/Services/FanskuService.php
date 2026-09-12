@@ -182,4 +182,98 @@ class FanskuService
 
         return hash_equals($expected, $signature);
     }
+
+    /**
+     * Perform an authenticated GET against the Fansku Public API.
+     *
+     * @throws \Exception on API error
+     */
+    protected function apiGet(string $path, array $query = []): array
+    {
+        $response = Http::withHeaders([
+            'key' => $this->apiKey,
+            'Accept' => 'application/json',
+        ])->get("{$this->baseUrl}/{$path}", $query);
+
+        $json = $response->json();
+
+        if (! $response->successful() || ! ($json['success'] ?? false)) {
+            $message = $json['message'] ?? 'Fansku API error';
+            Log::error("FanskuService::apiGet {$path} failed", ['response' => $json]);
+            throw new \Exception("Fansku: {$message}");
+        }
+
+        return $json['data'] ?? [];
+    }
+
+    /**
+     * Get creator balance (available + pending). Cached briefly.
+     *
+     * @return array {available_balance, pending_balance}
+     *
+     * @throws \Exception on API error
+     */
+    public function getBalance(): array
+    {
+        return Cache::remember(
+            'fansku:balance',
+            $this->methodsCacheTtl,
+            fn () => array_merge(
+                ['available_balance' => 0, 'pending_balance' => 0],
+                $this->apiGet('balance')
+            )
+        );
+    }
+
+    /**
+     * Get support count summary (total supports, amount, creator earning).
+     *
+     * @return array {total_supports, total_amount, total_creator_earning}
+     *
+     * @throws \Exception on API error
+     */
+    public function getSupportsCount(): array
+    {
+        return Cache::remember(
+            'fansku:supports-count',
+            $this->methodsCacheTtl,
+            fn () => array_merge(
+                ['total_supports' => 0, 'total_amount' => 0, 'total_creator_earning' => 0],
+                $this->apiGet('supports/count')
+            )
+        );
+    }
+
+    /**
+     * Get paginated paid support history (no cache — admin view).
+     *
+     * @return array {data, meta}
+     *
+     * @throws \Exception on API error
+     */
+    public function getSupports(int $page = 1, int $perPage = 15): array
+    {
+        $perPage = max(1, min(50, $perPage));
+
+        return $this->apiGet('supports', ['page' => $page, 'per_page' => $perPage]);
+    }
+
+    /**
+     * Get paginated balance transaction history (no cache — admin view).
+     *
+     * @return array {data, meta}
+     *
+     * @throws \Exception on API error
+     */
+    public function getBalanceTransactions(int $page = 1, int $perPage = 15, ?string $type = null): array
+    {
+        $perPage = max(1, min(50, $perPage));
+        $query = ['page' => $page, 'per_page' => $perPage];
+
+        if ($type) {
+            $query['type'] = $type;
+        }
+
+        return $this->apiGet('transactions', $query);
+    }
 }

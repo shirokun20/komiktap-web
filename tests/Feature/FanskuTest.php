@@ -18,7 +18,6 @@ class FanskuTest extends TestCase
         parent::setUp();
 
         config([
-            'fansku.is_enabled' => true,
             'fansku.api_key' => 'test-api-key',
             'fansku.webhook_secret' => 'test-webhook-secret',
             'fansku.base_url' => 'https://api.fansku.id/api/v1/public-api',
@@ -26,6 +25,11 @@ class FanskuTest extends TestCase
             'fansku.methods_cache_ttl' => 600,
             'tripay.is_enabled' => false,
         ]);
+
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->fansku_enabled = true;
+        $gateway->manual_enabled = false;
+        $gateway->save();
 
         $settings = app(PaymentSettings::class);
         $settings->is_enabled = true;
@@ -259,7 +263,7 @@ class FanskuTest extends TestCase
             'device_quota' => 1,
             'duration_months' => 1,
             'customer_contact' => 'buyer@example.com',
-            'payment_method' => 'QRIS Manual',
+            'payment_method' => 'QRIS Otomatis',
         ]);
 
         $response->assertOk()
@@ -276,6 +280,10 @@ class FanskuTest extends TestCase
     public function test_checkout_wa_contact_falls_back_to_manual(): void
     {
         $this->fakeQrisActive();
+
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->manual_enabled = true;
+        $gateway->save();
 
         $response = $this->postJson('/api/checkout', [
             'plan_name' => 'Starter',
@@ -296,7 +304,10 @@ class FanskuTest extends TestCase
 
     public function test_checkout_fansku_disabled_falls_back_to_manual(): void
     {
-        config(['fansku.is_enabled' => false]);
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->fansku_enabled = false;
+        $gateway->manual_enabled = true;
+        $gateway->save();
         $this->fakeQrisActive();
 
         $response = $this->postJson('/api/checkout', [
@@ -309,6 +320,25 @@ class FanskuTest extends TestCase
 
         $response->assertOk();
         $this->assertArrayNotHasKey('fansku', $response->json('data'));
+    }
+
+    // -------------------------------------------------------
+    // Checkout: manual disabled → rejected
+    // -------------------------------------------------------
+
+    public function test_checkout_manual_disabled_rejects_manual_method(): void
+    {
+        $this->fakeQrisActive();
+
+        $response = $this->postJson('/api/checkout', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'buyer@example.com',
+            'payment_method' => 'QRIS Manual',
+        ]);
+
+        $response->assertStatus(400);
     }
 
     // -------------------------------------------------------
@@ -325,7 +355,7 @@ class FanskuTest extends TestCase
             'duration_months' => 1,
             'amount' => 25000,
             'customer_contact' => 'donor@example.com',
-            'payment_method' => 'QRIS Manual',
+            'payment_method' => 'QRIS Otomatis',
         ]);
 
         $response->assertOk()
@@ -334,5 +364,30 @@ class FanskuTest extends TestCase
         $tx = Transaction::first();
         $this->assertStringStartsWith('KURON-PEDULI-', $tx->code);
         $this->assertSame('SUP-001', $tx->fansku_support_id);
+    }
+
+    // -------------------------------------------------------
+    // API: payment-methods hides manual when fansku-only
+    // -------------------------------------------------------
+
+    public function test_payment_methods_hidden_when_fansku_only(): void
+    {
+        $response = $this->getJson('/api/payment-methods?type=order');
+
+        $response->assertOk()
+            ->assertJsonPath('data.fansku_enabled', true)
+            ->assertJsonCount(0, 'data.payment_methods');
+    }
+
+    public function test_payment_methods_shown_when_manual_enabled(): void
+    {
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->manual_enabled = true;
+        $gateway->save();
+
+        $response = $this->getJson('/api/payment-methods?type=order');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data.payment_methods');
     }
 }

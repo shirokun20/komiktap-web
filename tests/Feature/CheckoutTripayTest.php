@@ -38,6 +38,11 @@ class CheckoutTripayTest extends TestCase
             'name'  => 'Starter',
             'price' => 50000,
         ]);
+
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->fansku_enabled = false;
+        $gateway->manual_enabled = true;
+        $gateway->save();
     }
 
     // -------------------------------------------------------
