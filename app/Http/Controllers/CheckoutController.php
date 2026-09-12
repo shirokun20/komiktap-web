@@ -78,6 +78,10 @@ class CheckoutController extends Controller
                      throw new \Exception("Invalid payment method selected.");
                 }
 
+                if (array_key_exists('is_active', $selectedMethod) && ! $selectedMethod['is_active']) {
+                    throw new \Exception("Metode pembayaran ini sedang nonaktif.");
+                }
+
                 // Format Payment Details for storage
                 if (!empty($selectedMethod['account_number'])) {
                     $details .= "No: " . $selectedMethod['account_number'];
@@ -243,10 +247,14 @@ class CheckoutController extends Controller
 
     /**
      * Check whether this transaction qualifies for Fansku QRIS auto-payment.
-     * Requires: admin toggle on + email contact + QRIS active on Fansku side.
+     * Requires: Fansku method chosen + admin toggle on + email contact + QRIS active.
      */
     protected function shouldUseFansku(Transaction $transaction): bool
     {
+        if (! in_array($transaction->payment_method, ['QRIS (Fansku)', 'FANSKU_QRIS', 'QRIS Otomatis'], true)) {
+            return false;
+        }
+
         if (! app(\App\Settings\PaymentGatewaySettings::class)->fansku_enabled) {
             return false;
         }

@@ -455,36 +455,28 @@
 
                             <div class="space-y-3 mb-4">
                                 <div>
-                                    <label class="text-gray-400 text-xs block mb-1.5 font-medium">Email <span
+                                    <label id="contactLabel" class="text-gray-400 text-xs block mb-1.5 font-medium">Email <span
                                             class="text-[#ff7900]">*</span></label>
                                     <input type="email" id="waInput" placeholder="cth: email@domain.com"
                                         class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all">
                                 </div>
 
-                                <div class="hidden">
+                                <div id="proofWrap" class="hidden">
                                     <label class="text-gray-400 text-xs block mb-1.5 font-medium">
-                                        3-5 Digit Terakhir Referensi Transfer
+                                        3-5 Digit Terakhir Referensi Transfer <span class="text-gray-600">(opsional)</span>
                                     </label>
                                     <input type="text" id="proofInput" maxlength="8" placeholder="cth: 12345"
-                                        class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all font-mono tracking-widest mb-2">
-                                    {{-- Honeypot field — hidden from humans, bots will fill it --}}
-                                    <input type="text" id="_hp_website" name="_hp_website" value=""
-                                        style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;"
-                                        tabindex="-1" autocomplete="off" aria-hidden="true">
-                                    <button onclick="submitDonation()" id="submitBtn"
-                                        class="btn-primary w-full text-white mt-3 px-5 py-3 rounded-xl text-sm font-bold">
-                                        Buat Kode QRIS
-                                    </button>
-                                    <p class="text-gray-600 text-[11px] mt-2 leading-relaxed">
-                                        <i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i>
-                                        QRIS otomatis via Fansku — tanpa upload bukti transfer.
-                                    </p>
+                                        class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all font-mono tracking-widest">
                                 </div>
+                                {{-- Honeypot field — hidden from humans, bots will fill it --}}
+                                <input type="text" id="_hp_website" name="_hp_website" value=""
+                                    style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;"
+                                    tabindex="-1" autocomplete="off" aria-hidden="true">
                                 <button onclick="submitDonation()" id="submitBtnVisible"
                                     class="btn-primary w-full text-white mt-3 px-5 py-3 rounded-xl text-sm font-bold">
                                     Buat Kode QRIS
                                 </button>
-                                <p class="text-gray-600 text-[11px] mt-2 leading-relaxed">
+                                <p id="submitNote" class="text-gray-600 text-[11px] mt-2 leading-relaxed">
                                     <i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i>
                                     QRIS otomatis via Fansku — tanpa upload bukti transfer.
                                 </p>
@@ -588,20 +580,32 @@
 
                 document.getElementById('methodsSkeleton').classList.add('hidden');
 
-                // Fansku QRIS primary — hide DB manual methods temporarily.
-                if (json.status === 'success' && json.data?.fansku_enabled) {
-                    PAYMENT_METHODS = [{ name: 'QRIS Otomatis', account_number: null, qris_image_path: null, instructions: '', _fansku: true }];
-                    renderMethods();
-                    selectMethod(0);
-                    return;
+                if (json.status === 'success') {
+                    // Merge synthetic QRIS Otomatis with manual methods from API.
+                    const remote = json.data?.payment_methods || [];
+                    const enabled = json.data?.is_enabled !== false;
+                    const methods = [];
+                    if (enabled && json.data?.fansku_enabled) {
+                        methods.push({ name: 'QRIS Otomatis', account_number: null, qris_image_path: null, instructions: '', _fansku: true });
+                    }
+                    if (enabled) methods.push(...remote);
+                    if (methods.length) {
+                        PAYMENT_METHODS = methods;
+                        renderMethods();
+                        if (methods.length === 1) {
+                            // Single option — auto-select (streamlined when Fansku-only).
+                            selectMethod(0, { streamlined: methods[0]._fansku === true });
+                        } else {
+                            // Multiple options — user must choose.
+                            document.getElementById('methodsCard').classList.remove('hidden');
+                            document.getElementById('detailPanels').classList.remove('hidden');
+                            document.getElementById('placeholderState').classList.remove('hidden');
+                            document.getElementById('confirmationForm').classList.add('hidden');
+                        }
+                        return;
+                    }
                 }
-
-                if (json.status === 'success' && json.data.is_enabled && json.data.payment_methods?.length) {
-                    PAYMENT_METHODS = json.data.payment_methods;
-                    renderMethods();
-                } else {
-                    document.getElementById('methodsEmpty').classList.remove('hidden');
-                }
+                document.getElementById('methodsEmpty').classList.remove('hidden');
             } catch (e) {
                 console.error(e);
                 document.getElementById('methodsSkeleton').classList.add('hidden');
@@ -767,15 +771,24 @@
         // ====================================
         // Select a payment method
         // ====================================
-        function selectMethod(index) {
+        function selectMethod(index, opts = {}) {
             SELECTED_INDEX = index;
             setStep(2);
+
+            const method = PAYMENT_METHODS[index] || {};
+            const isFansku = method._fansku === true;
+            const streamlined = opts.streamlined === true && isFansku;
 
             // Update card states
             document.querySelectorAll('.method-card').forEach(card => {
                 const isActive = parseInt(card.dataset.index) === index;
                 card.classList.toggle('active', isActive);
             });
+
+            // Streamlined Fansku-only mode keeps cards/panels hidden (legacy UX).
+            document.getElementById('methodsCard').classList.toggle('hidden', streamlined);
+            document.getElementById('detailPanels').classList.toggle('hidden', streamlined);
+            document.getElementById('fanskuAutoInfo')?.classList.toggle('hidden', !streamlined);
 
             // Show correct detail panel
             document.getElementById('placeholderState').classList.add('hidden');
@@ -785,6 +798,8 @@
             // Show confirmation form
             document.getElementById('confirmationForm').classList.remove('hidden');
 
+            updateSubmitUi(isFansku);
+
             // Scroll detail panel into view on mobile
             if (window.innerWidth < 1024) {
                 const rightCol = document.querySelector('.lg\\:col-span-3 > div');
@@ -793,6 +808,30 @@
                         rightCol.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }, 100);
                 }
+            }
+        }
+
+        // ====================================
+        // Adapt form labels to selected method
+        // ====================================
+        function updateSubmitUi(isFansku) {
+            const label = document.getElementById('contactLabel');
+            const wa = document.getElementById('waInput');
+            const proofWrap = document.getElementById('proofWrap');
+            const btn = document.getElementById('submitBtnVisible');
+            const note = document.getElementById('submitNote');
+            if (isFansku) {
+                if (label) label.innerHTML = 'Email <span class="text-[#ff7900]">*</span>';
+                if (wa) wa.placeholder = 'cth: email@domain.com';
+                proofWrap?.classList.add('hidden');
+                if (btn) btn.innerHTML = 'Buat Kode QRIS';
+                if (note) note.innerHTML = '<i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i> QRIS otomatis via Fansku — tanpa upload bukti transfer.';
+            } else {
+                if (label) label.innerHTML = 'Email / No. WhatsApp <span class="text-[#ff7900]">*</span>';
+                if (wa) wa.placeholder = 'cth: email@domain.com / 0812xxxx';
+                proofWrap?.classList.remove('hidden');
+                if (btn) btn.innerHTML = 'Buat Donasi';
+                if (note) note.innerHTML = '<i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i> Transfer sesuai nominal ke rekening di atas, lalu buat donasi. Verifikasi manual oleh admin.';
             }
         }
 
@@ -885,9 +924,16 @@
             const proof = document.getElementById('proofInput')?.value.trim() || '';
             const wa = document.getElementById('waInput').value.trim();
             const btn = document.getElementById('submitBtnVisible') || document.getElementById('submitBtn');
+            const method = SELECTED_INDEX >= 0 ? PAYMENT_METHODS[SELECTED_INDEX] : null;
+            const isFansku = method?._fansku === true;
 
-            if (!wa || !wa.includes('@')) {
-                showToast('Email valid wajib diisi untuk QRIS otomatis!');
+            if (!method) {
+                showToast('Pilih metode pembayaran terlebih dahulu!');
+                return;
+            }
+
+            if (!wa || (isFansku && !wa.includes('@'))) {
+                showToast(isFansku ? 'Email valid wajib diisi untuk QRIS otomatis!' : 'Email / No. WhatsApp wajib diisi!');
                 document.getElementById('waInput').focus();
                 return;
             }
@@ -903,7 +949,7 @@
                     duration_months: 1,
                     amount: AMOUNT,
                     customer_contact: wa,
-                    payment_method: 'QRIS Otomatis',
+                    payment_method: isFansku ? 'QRIS Otomatis' : method.name,
                     _hp_website: document.getElementById('_hp_website')?.value || '',
                 };
                 if (proof) body.proof_digits = proof;
@@ -931,14 +977,14 @@
                 } else {
                     showToast('Gagal: ' + (json.data?.message || 'Terjadi kesalahan.'));
                     btn.disabled = false;
-                    btn.innerHTML = 'Buat Kode QRIS';
+                    updateSubmitUi(isFansku);
                     setStep(2);
                 }
             } catch (e) {
                 console.error(e);
                 showToast('Gagal mengirim data, coba lagi.');
                 btn.disabled = false;
-                btn.innerHTML = 'Buat Kode QRIS';
+                updateSubmitUi(isFansku);
                 setStep(2);
             }
         }

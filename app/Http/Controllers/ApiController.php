@@ -43,22 +43,23 @@ class ApiController extends Controller
     {
         $gateway = app(\App\Settings\PaymentGatewaySettings::class);
 
-        // Fansku QRIS primary — hide DB manual methods unless manual enabled.
-        if ($gateway->fansku_enabled && ! $gateway->manual_enabled) {
-            return $this->success([
-                'is_enabled' => $settings->is_enabled,
-                'payment_methods' => [],
-                'fansku_enabled' => true,
-            ]);
-        }
-
         $type = $request->query('type', 'all'); // 'all', 'order', 'donation'
 
+        // Manual methods: hidden entirely when master toggle off; otherwise
+        // filtered by usage_type and per-method is_active (default active).
         $methods = collect($settings->payment_methods)
-            ->filter(function ($method) use ($type) {
+            ->filter(function ($method) use ($type, $gateway) {
+                if (! $gateway->manual_enabled) {
+                    return false;
+                }
+
+                if (array_key_exists('is_active', $method) && ! $method['is_active']) {
+                    return false;
+                }
+
                 // If usage_type is not set, assume 'all' (backward compatibility)
                 $usage = $method['usage_type'] ?? 'all';
-                
+
                 // If requesting 'all', return everything
                 if ($type === 'all') return true;
 
@@ -76,10 +77,12 @@ class ApiController extends Controller
                 return $method;
             });
 
+        // Both gateways coexist: frontend merges the synthetic QRIS Otomatis
+        // card (when fansku_enabled) with the manual list above.
         return $this->success([
             'is_enabled' => $settings->is_enabled,
             'payment_methods' => $methods,
-            'fansku_enabled' => false,
+            'fansku_enabled' => (bool) $gateway->fansku_enabled,
         ]);
     }
 

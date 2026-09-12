@@ -482,36 +482,28 @@
 
                             <div class="space-y-3 mb-4">
                                 <div>
-                                    <label class="text-gray-400 text-xs block mb-1.5 font-medium">Email <span
+                                    <label id="contactLabel" class="text-gray-400 text-xs block mb-1.5 font-medium">Email <span
                                             class="text-[#ff7900]">*</span></label>
                                     <input type="email" id="waInput" placeholder="cth: email@domain.com"
                                         class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all">
                                 </div>
 
-                                <div class="hidden">
+                                <div id="proofWrap" class="hidden">
                                     <label class="text-gray-400 text-xs block mb-1.5 font-medium">
-                                        3-5 Digit Terakhir Referensi Transfer
+                                        3-5 Digit Terakhir Referensi Transfer <span class="text-gray-600">(opsional)</span>
                                     </label>
                                     <input type="text" id="proofInput" maxlength="8" placeholder="cth: 12345"
-                                        class="w-full bg-black/20 border border-white/10 rounded-xl mb-3 px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all font-mono tracking-widest mb-2">
-                                    {{-- Honeypot field — hidden from humans, bots will fill it --}}
-                                    <input type="text" id="_hp_website" name="_hp_website" value=""
-                                        style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;"
-                                        tabindex="-1" autocomplete="off" aria-hidden="true">
-                                    <button onclick="submitOrder()" id="submitBtn"
-                                        class="btn-primary w-full text-white px-5 py-3 rounded-xl text-sm font-bold">
-                                        Buat Kode QRIS
-                                    </button>
-                                    <p class="text-gray-600 text-[11px] mt-2 leading-relaxed">
-                                        <i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i>
-                                        QRIS otomatis via Fansku — tanpa upload bukti transfer.
-                                    </p>
+                                        class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all font-mono tracking-widest">
                                 </div>
+                                {{-- Honeypot field — hidden from humans, bots will fill it --}}
+                                <input type="text" id="_hp_website" name="_hp_website" value=""
+                                    style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;"
+                                    tabindex="-1" autocomplete="off" aria-hidden="true">
                                 <button onclick="submitOrder()" id="submitBtnVisible"
                                     class="btn-primary w-full text-white px-5 py-3 rounded-xl text-sm font-bold">
                                     Buat Kode QRIS
                                 </button>
-                                <p class="text-gray-600 text-[11px] mt-2 leading-relaxed">
+                                <p id="submitNote" class="text-gray-600 text-[11px] mt-2 leading-relaxed">
                                     <i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i>
                                     QRIS otomatis via Fansku — tanpa upload bukti transfer.
                                 </p>
@@ -626,19 +618,32 @@
                 const res = await fetch('/api/payment-methods?type=order');
                 const json = await res.json();
                 document.getElementById('methodsSkeleton').classList.add('hidden');
-                // Fansku QRIS primary — hide DB manual methods temporarily.
-                if (json.status === 'success' && json.data?.fansku_enabled) {
-                    PAYMENT_METHODS = [{ name: 'QRIS Otomatis', account_number: null, qris_image_path: null, instructions: '', _fansku: true }];
-                    renderMethods();
-                    selectMethod(0);
-                    return;
+                if (json.status === 'success') {
+                    // Merge synthetic QRIS Otomatis with manual methods from API.
+                    const remote = json.data?.payment_methods || [];
+                    const enabled = json.data?.is_enabled !== false;
+                    const methods = [];
+                    if (enabled && json.data?.fansku_enabled) {
+                        methods.push({ name: 'QRIS Otomatis', account_number: null, qris_image_path: null, instructions: '', _fansku: true });
+                    }
+                    if (enabled) methods.push(...remote);
+                    if (methods.length) {
+                        PAYMENT_METHODS = methods;
+                        renderMethods();
+                        if (methods.length === 1) {
+                            // Single option — auto-select (streamlined when Fansku-only).
+                            selectMethod(0, { streamlined: methods[0]._fansku === true });
+                        } else {
+                            // Multiple options — user must choose.
+                            document.getElementById('methodsCard').classList.remove('hidden');
+                            document.getElementById('detailPanels').classList.remove('hidden');
+                            document.getElementById('placeholderState').classList.remove('hidden');
+                            document.getElementById('confirmationForm').classList.add('hidden');
+                        }
+                        return;
+                    }
                 }
-                if (json.status === 'success' && json.data.is_enabled && json.data.payment_methods?.length) {
-                    PAYMENT_METHODS = json.data.payment_methods;
-                    renderMethods();
-                } else {
-                    document.getElementById('methodsEmpty').classList.remove('hidden');
-                }
+                document.getElementById('methodsEmpty').classList.remove('hidden');
             } catch (e) {
                 console.error(e);
                 document.getElementById('methodsSkeleton').classList.add('hidden');
@@ -800,18 +805,29 @@
         // ====================================
         // Select payment method
         // ====================================
-        function selectMethod(index) {
+        function selectMethod(index, opts = {}) {
             SELECTED_INDEX = index;
             setStep(2);
+
+            const method = PAYMENT_METHODS[index] || {};
+            const isFansku = method._fansku === true;
+            const streamlined = opts.streamlined === true && isFansku;
 
             document.querySelectorAll('.method-card').forEach(card => {
                 card.classList.toggle('active', parseInt(card.dataset.index) === index);
             });
 
+            // Streamlined Fansku-only mode keeps cards/panels hidden (legacy UX).
+            document.getElementById('methodsCard').classList.toggle('hidden', streamlined);
+            document.getElementById('detailPanels').classList.toggle('hidden', streamlined);
+            document.getElementById('fanskuAutoInfo')?.classList.toggle('hidden', !streamlined);
+
             document.getElementById('placeholderState').classList.add('hidden');
             document.querySelectorAll('.detail-panel').forEach(p => p.classList.remove('active'));
             document.getElementById(`detail-${index}`)?.classList.add('active');
             document.getElementById('confirmationForm').classList.remove('hidden');
+
+            updateSubmitUi(isFansku);
 
             // Refresh amount in panel in case voucher was applied
             updatePanelAmounts();
@@ -820,6 +836,30 @@
             if (window.innerWidth < 1024) {
                 const rightCol = document.querySelector('.lg\\:col-span-3 > div');
                 if (rightCol) setTimeout(() => rightCol.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+            }
+        }
+
+        // ====================================
+        // Adapt form labels to selected method
+        // ====================================
+        function updateSubmitUi(isFansku) {
+            const label = document.getElementById('contactLabel');
+            const wa = document.getElementById('waInput');
+            const proofWrap = document.getElementById('proofWrap');
+            const btn = document.getElementById('submitBtnVisible');
+            const note = document.getElementById('submitNote');
+            if (isFansku) {
+                if (label) label.innerHTML = 'Email <span class="text-[#ff7900]">*</span>';
+                if (wa) wa.placeholder = 'cth: email@domain.com';
+                proofWrap?.classList.add('hidden');
+                if (btn) btn.innerHTML = 'Buat Kode QRIS';
+                if (note) note.innerHTML = '<i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i> QRIS otomatis via Fansku — tanpa upload bukti transfer.';
+            } else {
+                if (label) label.innerHTML = 'Email / No. WhatsApp <span class="text-[#ff7900]">*</span>';
+                if (wa) wa.placeholder = 'cth: email@domain.com / 0812xxxx';
+                proofWrap?.classList.remove('hidden');
+                if (btn) btn.innerHTML = 'Buat Pesanan';
+                if (note) note.innerHTML = '<i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i> Transfer sesuai nominal ke rekening di atas, lalu buat pesanan. Verifikasi manual oleh admin.';
             }
         }
 
@@ -1007,9 +1047,16 @@
             const proof = document.getElementById('proofInput')?.value.trim() || '';
             const wa = document.getElementById('waInput').value.trim();
             const btn = document.getElementById('submitBtnVisible') || document.getElementById('submitBtn');
+            const method = SELECTED_INDEX >= 0 ? PAYMENT_METHODS[SELECTED_INDEX] : null;
+            const isFansku = method?._fansku === true;
 
-            if (!wa || !wa.includes('@')) {
-                showToast('Email valid wajib diisi untuk QRIS otomatis!');
+            if (!method) {
+                showToast('Pilih metode pembayaran terlebih dahulu!');
+                return;
+            }
+
+            if (!wa || (isFansku && !wa.includes('@'))) {
+                showToast(isFansku ? 'Email valid wajib diisi untuk QRIS otomatis!' : 'Email / No. WhatsApp wajib diisi!');
                 document.getElementById('waInput').focus();
                 return;
             }
@@ -1025,7 +1072,7 @@
                     duration_months: PLAN_DURATION || 1,
                     amount: FINAL_AMOUNT,
                     customer_contact: wa,
-                    payment_method: 'QRIS Otomatis',
+                    payment_method: isFansku ? 'QRIS Otomatis' : method.name,
                     voucher_code: VOUCHER_CODE || '',
                     _hp_website: document.getElementById('_hp_website')?.value || '',
                 };
@@ -1056,14 +1103,14 @@
                 } else {
                     showToast('Gagal: ' + (json.data?.message || 'Terjadi kesalahan.'));
                     btn.disabled = false;
-                    btn.innerHTML = 'Buat Kode QRIS';
+                    updateSubmitUi(isFansku);
                     setStep(2);
                 }
             } catch (e) {
                 console.error(e);
                 showToast('Gagal mengirim data, coba lagi.');
                 btn.disabled = false;
-                btn.innerHTML = 'Buat Kode QRIS';
+                updateSubmitUi(isFansku);
                 setStep(2);
             }
         }

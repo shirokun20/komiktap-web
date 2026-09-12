@@ -387,7 +387,74 @@ class FanskuTest extends TestCase
 
         $response = $this->getJson('/api/payment-methods?type=order');
 
+        // Both gateways coexist: QRIS Otomatis flag + manual list.
         $response->assertOk()
+            ->assertJsonPath('data.fansku_enabled', true)
             ->assertJsonCount(1, 'data.payment_methods');
+    }
+
+    public function test_payment_methods_hides_inactive_method(): void
+    {
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->manual_enabled = true;
+        $gateway->save();
+
+        $settings = app(PaymentSettings::class);
+        $methods = $settings->payment_methods;
+        $methods[0]['is_active'] = false;
+        $settings->payment_methods = $methods;
+        $settings->save();
+
+        $this->getJson('/api/payment-methods?type=order')
+            ->assertOk()
+            ->assertJsonPath('data.fansku_enabled', true)
+            ->assertJsonCount(0, 'data.payment_methods');
+    }
+
+    // -------------------------------------------------------
+    // Checkout: email + manual method stays manual (no Fansku QR)
+    // -------------------------------------------------------
+
+    public function test_checkout_manual_method_with_email_stays_manual(): void
+    {
+        $this->fakeQrisActive();
+
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->manual_enabled = true;
+        $gateway->save();
+
+        $response = $this->postJson('/api/checkout', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'buyer@example.com',
+            'payment_method' => 'QRIS Manual',
+        ]);
+
+        $response->assertOk();
+        $this->assertArrayNotHasKey('fansku', $response->json('data'));
+        $this->assertNull(Transaction::first()->fansku_support_id);
+        $this->assertSame('QRIS Manual', Transaction::first()->payment_method);
+    }
+
+    public function test_checkout_inactive_manual_method_rejected(): void
+    {
+        $gateway = app(\App\Settings\PaymentGatewaySettings::class);
+        $gateway->manual_enabled = true;
+        $gateway->save();
+
+        $settings = app(PaymentSettings::class);
+        $methods = $settings->payment_methods;
+        $methods[0]['is_active'] = false;
+        $settings->payment_methods = $methods;
+        $settings->save();
+
+        $this->postJson('/api/checkout', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'buyer@example.com',
+            'payment_method' => 'QRIS Manual',
+        ])->assertStatus(400);
     }
 }
