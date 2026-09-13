@@ -312,7 +312,8 @@ class CheckoutController extends Controller
             'plan_name' => 'required|string',
             'device_quota' => 'required|integer|min:1',
             'duration_months' => 'required|integer|min:1',
-            'customer_contact' => 'nullable|email',
+            // customer_contact opsional dari client; diabaikan dan dikunci ke email login.
+            'customer_contact' => 'nullable|string',
             'proof_digits' => 'nullable|string|max:5',
             'amount' => 'nullable|numeric|min:1000', // For Donation
             'voucher_code' => 'nullable|string',

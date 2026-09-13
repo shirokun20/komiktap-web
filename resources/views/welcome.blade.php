@@ -301,7 +301,7 @@
                         class="px-6 py-3 rounded-md bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all flex items-center gap-2 shadow-lg">
                         <i class="fab fa-google text-[#ff7900]"></i> Masuk dengan Google
                     </a>
-                    <p class="text-gray-500 text-xs">Masuk untuk melihat <a href="{{ route('history.index') }}" class="text-komik-primary hover:underline">Riwayat Pembelian</a> • Tetap bisa <a href="{{ route('orders.index') }}" class="text-gray-300 hover:underline">Cek Pesanan manual</a></p>
+                    <p class="text-gray-500 text-xs">Masuk untuk melihat <a href="{{ route('history.index') }}" class="text-komik-primary hover:underline">Riwayat Pembelian</a> dan <a href="{{ route('orders.index') }}" class="text-gray-300 hover:underline">Pesanan Saya</a></p>
                 @endauth
             </div>
         </div>

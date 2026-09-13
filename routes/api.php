@@ -16,16 +16,16 @@ Route::get('/payment-methods', [\App\Http\Controllers\ApiController::class, 'pay
 // Checkout wajib login Google (web session atau Sanctum Bearer mobile).
 // customer_contact dikunci ke email user login di controller.
 Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store'])
-    ->middleware(['auth:sanctum', 'throttle:' . config('tripay.rate_limit.checkout', '5,10')]);
+    ->middleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, 'auth:sanctum', 'throttle:' . config('tripay.rate_limit.checkout', '5,10')]);
 
 // Dedicated QRIS Otomatis (Fansku) checkout — strict, no silent fallback.
 Route::post('/checkout/fansku', [\App\Http\Controllers\CheckoutController::class, 'storeFansku'])
-    ->middleware(['auth:sanctum', 'throttle:' . config('tripay.rate_limit.checkout', '5,10')]);
+    ->middleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, 'auth:sanctum', 'throttle:' . config('tripay.rate_limit.checkout', '5,10')]);
 
 // QRIS payment status (backs the reload-safe /bayar/qris/{code} page + polling).
 // Dikunci ke pemilik email agar QR/status tidak bisa diintip orang lain.
 Route::get('/checkout/fansku/{transaction:code}', [\App\Http\Controllers\CheckoutController::class, 'showFansku'])
-    ->middleware('auth:sanctum');
+    ->middleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, 'auth:sanctum']);
 Route::post('/check-voucher', [\App\Http\Controllers\ApiController::class, 'checkVoucher']);
 Route::post('/check-license', [\App\Http\Controllers\LicenseController::class, 'check']);
 Route::post('/error-report', [\App\Http\Controllers\Api\ErrorReportController::class, 'store']);

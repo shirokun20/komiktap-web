@@ -267,6 +267,7 @@ class FanskuTest extends TestCase
     public function test_checkout_with_fansku_returns_qr(): void
     {
         $this->fakeQrisActive();
+        $this->loginAs();
 
         $response = $this->postJson('/api/checkout', [
             'plan_name' => 'Starter',
@@ -290,6 +291,7 @@ class FanskuTest extends TestCase
     public function test_checkout_wa_contact_falls_back_to_manual(): void
     {
         $this->fakeQrisActive();
+        $this->loginAs();
 
         $gateway = app(\App\Settings\PaymentGatewaySettings::class);
         $gateway->manual_enabled = true;
@@ -306,6 +308,8 @@ class FanskuTest extends TestCase
         $response->assertOk();
         $this->assertArrayNotHasKey('fansku', $response->json('data'));
         $this->assertNull(Transaction::first()->fansku_support_id);
+        // Input kontak manual diabaikan — dikunci ke email login.
+        $this->assertSame('buyer@example.com', Transaction::first()->customer_contact);
     }
 
     // -------------------------------------------------------
@@ -314,6 +318,7 @@ class FanskuTest extends TestCase
 
     public function test_checkout_fansku_disabled_falls_back_to_manual(): void
     {
+        $this->loginAs();
         $gateway = app(\App\Settings\PaymentGatewaySettings::class);
         $gateway->fansku_enabled = false;
         $gateway->manual_enabled = true;
@@ -338,6 +343,7 @@ class FanskuTest extends TestCase
 
     public function test_checkout_manual_disabled_rejects_manual_method(): void
     {
+        $this->loginAs();
         $this->fakeQrisActive();
 
         $response = $this->postJson('/api/checkout', [
@@ -357,6 +363,7 @@ class FanskuTest extends TestCase
 
     public function test_checkout_donation_via_fansku(): void
     {
+        $this->loginAs('donor@example.com');
         $this->fakeQrisActive();
 
         $response = $this->postJson('/api/checkout', [
@@ -427,6 +434,7 @@ class FanskuTest extends TestCase
 
     public function test_checkout_manual_method_with_email_stays_manual(): void
     {
+        $this->loginAs();
         $this->fakeQrisActive();
 
         $gateway = app(\App\Settings\PaymentGatewaySettings::class);
@@ -449,6 +457,7 @@ class FanskuTest extends TestCase
 
     public function test_checkout_inactive_manual_method_rejected(): void
     {
+        $this->loginAs();
         $gateway = app(\App\Settings\PaymentGatewaySettings::class);
         $gateway->manual_enabled = true;
         $gateway->save();
@@ -475,6 +484,7 @@ class FanskuTest extends TestCase
     public function test_fansku_endpoint_returns_qr(): void
     {
         Cache::forget('fansku:payment-methods');
+        $this->loginAs();
         $this->fakeQrisActive();
 
         $response = $this->postJson('/api/checkout/fansku', [
@@ -493,20 +503,30 @@ class FanskuTest extends TestCase
         $this->assertSame('QRIS (Fansku)', $tx->payment_method);
     }
 
-    public function test_fansku_endpoint_rejects_non_email(): void
+    public function test_fansku_endpoint_ignores_non_email_and_locks_to_login(): void
     {
-        $this->postJson('/api/checkout/fansku', [
+        Cache::forget('fansku:payment-methods');
+        $this->loginAs();
+        $this->fakeQrisActive();
+
+        // Input kontak manual (non-email) diabaikan — dikunci ke email login.
+        $response = $this->postJson('/api/checkout/fansku', [
             'plan_name' => 'Starter',
             'device_quota' => 1,
             'duration_months' => 1,
             'customer_contact' => '08123456789',
-        ])->assertStatus(422);
+        ]);
 
-        $this->assertSame(0, Transaction::count());
+        $response->assertOk()
+            ->assertJsonPath('data.fansku.qr_string', 'qr-abc');
+
+        $this->assertSame('buyer@example.com', Transaction::first()->customer_contact);
+        Cache::forget('fansku:payment-methods');
     }
 
     public function test_fansku_endpoint_rejects_when_disabled(): void
     {
+        $this->loginAs();
         $gateway = app(\App\Settings\PaymentGatewaySettings::class);
         $gateway->fansku_enabled = false;
         $gateway->save();
@@ -524,6 +544,7 @@ class FanskuTest extends TestCase
     public function test_fansku_endpoint_qris_inactive_leaves_no_junk(): void
     {
         Cache::forget('fansku:payment-methods');
+        $this->loginAs();
         Http::fake([
             'api.fansku.id/api/v1/public-api/payment-methods' => Http::response([
                 'success' => true,
@@ -553,6 +574,7 @@ class FanskuTest extends TestCase
     public function test_fansku_endpoint_supports_failure_returns_502_and_no_junk(): void
     {
         Cache::forget('fansku:payment-methods');
+        $this->loginAs();
         Http::fake([
             'api.fansku.id/api/v1/public-api/payment-methods' => Http::response([
                 'success' => true,
@@ -586,6 +608,7 @@ class FanskuTest extends TestCase
     public function test_fansku_endpoint_donation(): void
     {
         Cache::forget('fansku:payment-methods');
+        $this->loginAs('donor@example.com');
         $this->fakeQrisActive();
 
         $response = $this->postJson('/api/checkout/fansku', [
@@ -604,6 +627,8 @@ class FanskuTest extends TestCase
 
     public function test_fansku_endpoint_honeypot_returns_fake_success(): void
     {
+        $this->loginAs();
+
         $response = $this->postJson('/api/checkout/fansku', [
             'plan_name' => 'Starter',
             'device_quota' => 1,

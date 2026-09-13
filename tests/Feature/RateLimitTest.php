@@ -52,6 +52,9 @@ class RateLimitTest extends TestCase
 
     public function test_checkout_rate_limit_returns_429_after_limit_exceeded(): void
     {
+        $user = \App\Models\User::factory()->create(['email' => 'buyer@example.com']);
+        $this->actingAs($user);
+
         // NOTE: throttle: parameter is resolved at route registration, so
         // overriding tripay.rate_limit.checkout here has no effect.
         // Default is 5,10 → first 5 succeed, 6th is rate limited.

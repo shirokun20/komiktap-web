@@ -3,12 +3,21 @@
 namespace Tests\Feature;
 
 use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class FanskuQrisPageTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function loginAs(string $email = 'buyer@example.com'): User
+    {
+        $user = User::factory()->create(['email' => $email]);
+        $this->actingAs($user);
+
+        return $user;
+    }
 
     private function makeFanskuTransaction(string $code, array $overrides = []): Transaction
     {
@@ -38,6 +47,7 @@ class FanskuQrisPageTest extends TestCase
 
     public function test_qris_page_shows_qr_for_pending(): void
     {
+        $this->loginAs();
         $tx = $this->makeFanskuTransaction('KURON-INV-20260101-QR01');
 
         $this->get('/bayar/qris/' . $tx->code)
@@ -50,6 +60,7 @@ class FanskuQrisPageTest extends TestCase
 
     public function test_qris_page_redirects_manual_to_success(): void
     {
+        $this->loginAs();
         $tx = $this->makeFanskuTransaction('KURON-INV-20260101-QR02', [
             'payment_method' => 'BCA',
             'fansku_support_id' => null,
@@ -63,6 +74,7 @@ class FanskuQrisPageTest extends TestCase
 
     public function test_qris_page_redirects_finished_to_success(): void
     {
+        $this->loginAs();
         $approved = $this->makeFanskuTransaction('KURON-INV-20260101-QR03', ['status' => 'approved']);
         $rejected = $this->makeFanskuTransaction('KURON-INV-20260101-QR04', ['status' => 'rejected']);
 
@@ -72,11 +84,13 @@ class FanskuQrisPageTest extends TestCase
 
     public function test_qris_page_404_for_unknown_code(): void
     {
+        $this->loginAs();
         $this->get('/bayar/qris/KURON-INV-20260101-NOPE')->assertNotFound();
     }
 
     public function test_status_api_returns_qr_data(): void
     {
+        $this->loginAs();
         $tx = $this->makeFanskuTransaction('KURON-INV-20260101-QR05');
 
         $this->getJson('/api/checkout/fansku/' . $tx->code)
@@ -91,6 +105,7 @@ class FanskuQrisPageTest extends TestCase
 
     public function test_status_api_404_for_manual(): void
     {
+        $this->loginAs();
         $tx = $this->makeFanskuTransaction('KURON-INV-20260101-QR06', [
             'payment_method' => 'BCA',
             'fansku_support_id' => null,

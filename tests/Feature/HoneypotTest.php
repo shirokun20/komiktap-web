@@ -47,6 +47,9 @@ class HoneypotTest extends TestCase
 
     public function test_checkout_with_filled_honeypot_returns_fake_success_without_creating_transaction(): void
     {
+        $user = \App\Models\User::factory()->create(['email' => 'bot@example.com']);
+        $this->actingAs($user);
+
         $response = $this->postJson('/api/checkout', [
             'plan_name'        => 'Starter',
             'device_quota'     => 1,
@@ -69,6 +72,9 @@ class HoneypotTest extends TestCase
 
     public function test_checkout_with_empty_honeypot_processes_normally(): void
     {
+        $user = \App\Models\User::factory()->create(['email' => 'human@example.com']);
+        $this->actingAs($user);
+
         $response = $this->postJson('/api/checkout', [
             'plan_name'        => 'Starter',
             'device_quota'     => 1,
