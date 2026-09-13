@@ -18,6 +18,9 @@ class TripayCallbackTest extends TestCase
 
         config([
             'tripay.private_key' => 'test-private-key',
+            // Callback tests assume an enabled gateway; the disabled case
+            // is covered by test_callback_rejected_when_gateway_disabled.
+            'tripay.is_enabled' => true,
         ]);
     }
 
@@ -265,5 +268,68 @@ class TripayCallbackTest extends TestCase
         $this->postJson('/api/tripay/callback', $payload, [
             'X-Callback-Signature' => 'invalid',
         ])->assertStatus(429);
+    }
+
+    // -------------------------------------------------------
+    // Gateway disabled → 404 without processing
+    // -------------------------------------------------------
+
+    public function test_callback_rejected_when_gateway_disabled(): void
+    {
+        config([
+            'tripay.is_enabled' => false,
+            'tripay.private_key' => 'test-private-key',
+        ]);
+
+        $transaction = $this->makeTransaction();
+
+        $payload = json_encode([
+            'merchant_ref' => $transaction->code,
+            'status'       => 'PAID',
+            'total_amount' => 150000,
+            'total_fee'    => 2000,
+            'paid_at'      => now()->timestamp,
+        ]);
+        // Signature VALID — gating harus menolak sebelum validasi.
+        $signature = hash_hmac('sha256', $payload, 'test-private-key');
+
+        $response = $this->call('POST', '/api/tripay/callback', [], [], [], [
+            'HTTP_X-Callback-Signature' => $signature,
+            'CONTENT_TYPE'              => 'application/json',
+        ], $payload);
+
+        $response->assertStatus(404);
+        $this->assertSame('pending', $transaction->refresh()->status);
+        $this->assertNull($transaction->license_id);
+    }
+
+    public function test_callback_disabled_with_invalid_signature_still_returns_404(): void
+    {
+        // Tripay tidak dipakai (gateway OFF): callback wajib 404 bahkan
+        // sebelum validasi signature — signature invalid pun tetap 404,
+        // bukan 401, dan tidak ada perubahan state.
+        config([
+            'tripay.is_enabled' => false,
+            'tripay.private_key' => 'test-private-key',
+        ]);
+
+        $transaction = $this->makeTransaction(['code' => 'KURON-INV-20260101-DISABLED']);
+
+        $payload = json_encode([
+            'merchant_ref' => $transaction->code,
+            'status'       => 'PAID',
+            'total_amount' => 150000,
+            'total_fee'    => 2000,
+            'paid_at'      => now()->timestamp,
+        ]);
+
+        $response = $this->call('POST', '/api/tripay/callback', [], [], [], [
+            'HTTP_X-Callback-Signature' => 'invalid-signature',
+            'CONTENT_TYPE'              => 'application/json',
+        ], $payload);
+
+        $response->assertStatus(404);
+        $this->assertSame('pending', $transaction->refresh()->status);
+        $this->assertNull($transaction->license_id);
     }
 }

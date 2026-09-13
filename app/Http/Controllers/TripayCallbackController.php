@@ -14,6 +14,14 @@ class TripayCallbackController extends Controller
 {
     public function handle(Request $request, TripayService $tripay)
     {
+        if (! config('tripay.is_enabled')) {
+            Log::warning('TripayCallback received while gateway disabled', [
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json(['success' => false, 'message' => 'Not found.'], 404);
+        }
+
         // 3.2 Validate callback signature
         $rawBody  = $request->getContent();
         $signature = $request->header('X-Callback-Signature', '');
