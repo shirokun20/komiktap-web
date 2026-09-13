@@ -149,12 +149,9 @@
                         <div>
                             <h3 class="text-white font-bold text-lg">Discord Community</h3>
                             <div class="text-sm text-gray-500 mb-1 leading-relaxed">
-                                {!! $parseDesc($contact->discord_description) !!}
+                                <i class="fas fa-info-circle mr-1 text-komik-primary/60"></i>
+                                Komunitas Discord belum tersedia — silakan hubungi kami via WhatsApp atau Email di atas.
                             </div>
-                            <a href="{{ $contact->discord_url }}" target="_blank"
-                                class="text-komik-primary hover:text-white transition-colors font-medium">
-                                {{ $contact->discord_name }}
-                            </a>
                         </div>
                     </div>
                 </div>
