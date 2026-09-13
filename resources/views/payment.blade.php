@@ -552,7 +552,7 @@
                         <div id="detailPanels" class="hidden"></div>
 
                         <!-- Confirmation Form -->
-                        <div id="confirmationForm" class="mt-0 pt-0 border-t-0">
+                        <div id="confirmationForm" class="mt-4 pt-0 border-t-0">
                             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Data Pembeli</p>
 
                             <div class="space-y-3 mb-4">
