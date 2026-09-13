@@ -231,13 +231,13 @@
                         </form>
                     @else
                         <a href="{{ route('auth.google.redirect') }}"
-                            class="px-4 py-2 rounded-lg text-sm font-bold bg-white text-gray-900 hover:bg-gray-100 transition-all flex items-center gap-2">
-                            <i class="fab fa-google text-[#ff7900]"></i> Masuk dengan Google
+                            class="px-6 py-2 rounded-lg text-sm font-bold bg-white text-gray-900 hover:bg-gray-100 transition-all flex items-center justify-center gap-2">
+                            <i class="fab fa-google text-[#ff7900] text-base w-4 text-center"></i> Masuk dengan Google
                         </a>
                     @endauth
                     <a href="{{ route('download.index') }}"
-                        class="btn-primary px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-komik-primary/20 hover:shadow-komik-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                        <i class="fab fa-android text-lg"></i> Download App
+                        class="btn-primary px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-komik-primary/20 hover:shadow-komik-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                        <i class="fab fa-android text-base w-4 text-center"></i> Download App
                     </a>
                 </div>
             </div>
@@ -280,26 +280,26 @@
 
             <div class="flex flex-col sm:flex-row justify-center gap-4">
                 <a href="#pricing"
-                    class="btn-primary px-8 py-3 rounded-md font-bold text-lg shadow-lg shadow-komik-primary/20">
+                    class="btn-primary px-8 py-3 rounded-md font-bold text-lg shadow-lg shadow-komik-primary/20 transition-all flex items-center justify-center gap-2 text-center">
                     Beli Premium
                 </a>
                 <a href="#"
-                    class="px-8 py-3 rounded-md bg-[#333] hover:bg-[#444] text-white font-medium transition-all">
+                    class="px-8 py-3 rounded-md bg-[#333] hover:bg-[#444] text-white font-bold text-lg transition-all flex items-center justify-center gap-2 text-center">
                     Fitur Lengkap
                 </a>
             </div>
 
-            <div class="mt-6 flex flex-col items-center gap-2">
+            <div class="mt-6 flex flex-col items-center gap-3">
                 @auth
                     <a href="{{ route('history.index') }}"
-                        class="px-6 py-3 rounded-md bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all flex items-center gap-2">
-                        <i class="fas fa-receipt text-[#ff7900]"></i> Lihat Riwayat Pembelian
+                        class="px-8 py-3 rounded-md bg-white text-gray-900 font-bold text-lg hover:bg-gray-100 transition-all flex items-center justify-center gap-2 shadow-lg text-center">
+                        <i class="fas fa-receipt text-[#ff7900] text-lg"></i> Lihat Riwayat Pembelian
                     </a>
                     <p class="text-gray-500 text-xs">Masuk sebagai {{ auth()->user()->email }}</p>
                 @else
                     <a href="{{ route('auth.google.redirect') }}"
-                        class="px-6 py-3 rounded-md bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all flex items-center gap-2 shadow-lg">
-                        <i class="fab fa-google text-[#ff7900]"></i> Masuk dengan Google
+                        class="px-8 py-3 rounded-md bg-white text-gray-900 font-bold text-lg hover:bg-gray-100 transition-all flex items-center justify-center gap-2 shadow-lg text-center">
+                        <i class="fab fa-google text-[#ff7900] text-lg"></i> Masuk dengan Google
                     </a>
                     <p class="text-gray-500 text-xs">Masuk untuk melihat <a href="{{ route('history.index') }}" class="text-komik-primary hover:underline">Riwayat Pembelian</a> dan <a href="{{ route('orders.index') }}" class="text-gray-300 hover:underline">Pesanan Saya</a></p>
                 @endauth
