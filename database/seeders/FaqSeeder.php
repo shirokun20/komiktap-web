@@ -27,11 +27,11 @@ class FaqSeeder extends Seeder
             ],
             [
                 'question' => 'Apakah pembayaran aman?',
-                'answer' => "Aman.\nAkan tetapi saat ini untuk payment sedang dalam perbaikan atau maintenance. 🙏",
+                'answer' => "Aman. Pembayaran kami sudah otomatis via QRIS — begitu pembayaran berhasil, lisensi langsung diproses oleh sistem tanpa perlu konfirmasi manual. 🙏",
             ],
             [
                 'question' => 'Berapa lama proses verifikasi?',
-                'answer' => 'Proses verifikasi manual kami biasanya memakan waktu 5-15 menit pada jam kerja (09:00 - 21:00 WIB). Di luar jam tersebut mungkin sedikit lebih lama.',
+                'answer' => 'Verifikasi pembayaran otomatis dan hanya butuh beberapa saat setelah QRIS terbayar. Jika status belum berubah, tunggu maksimal 5 menit lalu hubungi Admin via halaman contact.',
             ],
             [
                 'question' => 'Apakah bisa refund?',
