@@ -36,7 +36,7 @@ class GoogleAuthController extends Controller
 
         $email = $googleUser->getEmail();
         $raw = $googleUser->getRaw() ?? [];
-        $emailVerified = $raw['email_verified'] ?? $raw['verified_email'] ?? true;
+        $emailVerified = $raw['email_verified'] ?? $raw['verified_email'] ?? false;
 
         if (empty($email) || ! $emailVerified) {
             return redirect('/')->with('error', 'Email Google tidak terverifikasi. Gunakan akun Google yang valid.');

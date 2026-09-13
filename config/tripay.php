@@ -41,6 +41,10 @@ return [
         'download' => env('RATE_LIMIT_DOWNLOAD', '10,10'),
         'contact'  => env('RATE_LIMIT_CONTACT', '3,10'),
         'lookup'   => env('RATE_LIMIT_LOOKUP', '10,10'),
+        'callback' => env('RATE_LIMIT_CALLBACK', '60,1'),
+        'voucher'  => env('RATE_LIMIT_VOUCHER', '10,10'),
+        'license_check' => env('RATE_LIMIT_LICENSE_CHECK', '10,10'),
+        'error_report'  => env('RATE_LIMIT_ERROR_REPORT', '10,10'),
     ],
 
 ];

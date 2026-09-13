@@ -8,6 +8,10 @@ Route::get('/user', [\App\Http\Controllers\ApiController::class, 'me'])->middlew
 Route::post('/auth/google/mobile', [\App\Http\Controllers\Api\GoogleMobileAuthController::class, 'login'])
     ->middleware('throttle:20,1');
 
+// Logout mobile: cabut hanya token pemanggil.
+Route::post('/auth/logout', [\App\Http\Controllers\Api\GoogleMobileAuthController::class, 'logout'])
+    ->middleware('auth:sanctum');
+
 Route::get('/config', [\App\Http\Controllers\ApiController::class, 'config']);
 Route::get('/plans', [\App\Http\Controllers\ApiController::class, 'plans']);
 Route::get('/faqs', [\App\Http\Controllers\ApiController::class, 'faqs']);
@@ -26,9 +30,12 @@ Route::post('/checkout/fansku', [\App\Http\Controllers\CheckoutController::class
 // Dikunci ke pemilik email agar QR/status tidak bisa diintip orang lain.
 Route::get('/checkout/fansku/{transaction:code}', [\App\Http\Controllers\CheckoutController::class, 'showFansku'])
     ->middleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, 'auth:sanctum']);
-Route::post('/check-voucher', [\App\Http\Controllers\ApiController::class, 'checkVoucher']);
-Route::post('/check-license', [\App\Http\Controllers\LicenseController::class, 'check']);
-Route::post('/error-report', [\App\Http\Controllers\Api\ErrorReportController::class, 'store']);
+Route::post('/check-voucher', [\App\Http\Controllers\ApiController::class, 'checkVoucher'])
+    ->middleware('throttle:' . config('tripay.rate_limit.voucher', '10,10'));
+Route::post('/check-license', [\App\Http\Controllers\LicenseController::class, 'check'])
+    ->middleware('throttle:' . config('tripay.rate_limit.license_check', '10,10'));
+Route::post('/error-report', [\App\Http\Controllers\Api\ErrorReportController::class, 'store'])
+    ->middleware('throttle:' . config('tripay.rate_limit.error_report', '10,10'));
 Route::get('/check-update', [\App\Http\Controllers\Api\VersionController::class, 'check']);
 
 // Katalog v2 (proxy resmi komiktap.info, tanpa kata "scrape")

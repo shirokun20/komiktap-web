@@ -9,6 +9,8 @@ use Illuminate\Support\Carbon;
 
 class BackupService
 {
+    protected const DB_DUMP_TMP = 'backups/db-dump.sql';
+
     public function createBackup(array $options): string
     {
         $timestamp = Carbon::now()->format('Y-m-d-H-i-s');
@@ -21,34 +23,40 @@ class BackupService
             mkdir(dirname($backupPath), 0755, true);
         }
 
-        $zip = new ZipArchive();
-        if ($zip->open($backupPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new \Exception("Cannot create zip file at {$backupPath}");
-        }
+        try {
+            $zip = new ZipArchive();
+            if ($zip->open($backupPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                throw new \Exception("Cannot create zip file at {$backupPath}");
+            }
 
-        // 1. Database Backup
-        if (in_array('db', $options)) {
-            $this->addDatabaseDump($zip);
-        }
+            // 1. Database Backup
+            if (in_array('db', $options)) {
+                $this->addDatabaseDump($zip);
+            }
 
-        // 2. Public Storage
-        if (in_array('files', $options)) {
-            $this->addFolderToZip($zip, storage_path('app/public'), 'public_storage');
-        }
+            // 2. Public Storage
+            if (in_array('files', $options)) {
+                $this->addFolderToZip($zip, storage_path('app/public'), 'public_storage');
+            }
 
-        // 3. Logs
-        if (in_array('logs', $options)) {
-            $this->addFolderToZip($zip, storage_path('logs'), 'logs');
-        }
+            // 3. Logs
+            if (in_array('logs', $options)) {
+                $this->addFolderToZip($zip, storage_path('logs'), 'logs');
+            }
 
-        $zip->close();
+            $zip->close();
+        } finally {
+            // Temp dump dibaca zip saat close(); selalu bersihkan setelahnya,
+            // termasuk saat backup gagal di tengah jalan.
+            Storage::disk('local')->delete(self::DB_DUMP_TMP);
+        }
 
         return $fileName;
     }
 
     protected function addDatabaseDump(ZipArchive $zip)
     {
-        $dbDumpFile = Storage::disk('local')->path('backups/db-dump.sql');
+        $dbDumpFile = Storage::disk('local')->path(self::DB_DUMP_TMP);
 
         $username = config('database.connections.mysql.username');
         $password = config('database.connections.mysql.password');
@@ -137,10 +145,7 @@ class BackupService
         if (file_exists($dbDumpFile)) {
             $zip->addFile($dbDumpFile, 'database.sql');
         }
-        // Clean up temporary dump file after generic add
-        // We can't delete it immediately if ZIP is still open and hasn't committed? 
-        // Actually addFile reads it. We delete it after zip closes or keep it temp.
-        // Let's rely on garbage collection or simple overwrite next time.
+        // File sementara dihapus oleh finally di createBackup() setelah zip ditutup.
     }
 
 

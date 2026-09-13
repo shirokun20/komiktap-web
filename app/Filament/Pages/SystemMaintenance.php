@@ -63,21 +63,36 @@ class SystemMaintenance extends Page
     public function downloadBackup($backupIds, BackupService $service)
     {
         // $backupIds is actually the filename here passed from blade wire:click
-        $path = 'backups/' . $backupIds;
-        if (Storage::exists($path)) {
-            return Storage::download($path);
+        if (! $this->isKnownBackup($backupIds)) {
+            Notification::make()->title('File not found')->danger()->send();
+
+            return;
         }
-        
-        Notification::make()->title('File not found')->danger()->send();
+
+        return Storage::download('backups/' . $backupIds);
     }
 
     public function deleteBackup($backupIds)
     {
-        $path = 'backups/' . $backupIds;
-        if (Storage::exists($path)) {
-            Storage::delete($path);
-            Notification::make()->title('Backup Deleted')->success()->send();
+        if (! $this->isKnownBackup($backupIds)) {
+            Notification::make()->title('File not found')->danger()->send();
+
+            return;
         }
+
+        Storage::delete('backups/' . $backupIds);
+        Notification::make()->title('Backup Deleted')->success()->send();
+    }
+
+    protected function isKnownBackup(mixed $name): bool
+    {
+        if (! is_string($name) || $name === '') {
+            return false;
+        }
+
+        return collect((new BackupService())->listBackups())
+            ->pluck('name')
+            ->containsStrict($name);
     }
 
     public function getBackupsProperty()

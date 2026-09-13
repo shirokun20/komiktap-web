@@ -33,6 +33,7 @@ class VoucherResource extends Resource
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->alphaDash()
+                            ->minLength(8)
                             ->maxLength(255)
                             ->placeholder('e.g. SUMMER-SALE'),
                         Forms\Components\Select::make('type')

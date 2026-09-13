@@ -16,10 +16,10 @@ class ErrorReportController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'error_message' => 'required|string',
-            'stack_trace' => 'nullable|string',
-            'device_info' => 'nullable|string',
-            'app_version' => 'nullable|string',
+            'error_message' => 'required|string|max:2000',
+            'stack_trace' => 'nullable|string|max:20000',
+            'device_info' => 'nullable|string|max:255',
+            'app_version' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {

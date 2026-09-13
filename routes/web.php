@@ -16,6 +16,7 @@ Route::get('/', function () {
 // TriPay callback — no CSRF (called by TriPay server)
 Route::post('/api/tripay/callback', [TripayCallbackController::class, 'handle'])
     ->name('tripay.callback')
+    ->middleware('throttle:' . config('tripay.rate_limit.callback', '60,1'))
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 // Fansku webhook — no CSRF (called by Fansku server), event: donation.paid

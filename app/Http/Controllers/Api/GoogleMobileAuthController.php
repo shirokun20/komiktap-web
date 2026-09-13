@@ -74,6 +74,16 @@ class GoogleMobileAuthController extends Controller
     }
 
     /**
+     * Cabut token akses pemanggil saja; perangkat lain tetap login.
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return $this->success(['message' => 'Logged out successfully.']);
+    }
+
+    /**
      * Verifikasi Google ID token via JWKS resmi.
      *
      * @return array payload
@@ -102,7 +112,7 @@ class GoogleMobileAuthController extends Controller
 
         $clientId = config('services.google.client_id');
         $aud = $payload['aud'] ?? '';
-        if ($clientId && $aud !== $clientId) {
+        if (! $clientId || $aud !== $clientId) {
             throw new \Exception('Audience tidak cocok.');
         }
 

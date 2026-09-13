@@ -217,4 +217,53 @@ class TripayCallbackTest extends TestCase
         // Status should remain approved, no duplicate license
         $this->assertSame('approved', $transaction->status);
     }
+
+    // -------------------------------------------------------
+    // Fail-closed: empty signing secret → always 401
+    // -------------------------------------------------------
+
+    public function test_callback_with_empty_secret_always_returns_401(): void
+    {
+        config(['tripay.private_key' => '']);
+
+        $transaction = $this->makeTransaction();
+
+        $payload = json_encode([
+            'merchant_ref' => $transaction->code,
+            'status'       => 'PAID',
+            'total_amount' => 150000,
+            'total_fee'    => 2000,
+            'paid_at'      => now()->timestamp,
+        ]);
+        // Signature yang valid untuk key kosong — dapat dihitung siapa pun.
+        $forged = hash_hmac('sha256', $payload, '');
+
+        $response = $this->call('POST', '/api/tripay/callback', [], [], [], [
+            'HTTP_X-Callback-Signature' => $forged,
+            'CONTENT_TYPE'              => 'application/json',
+        ], $payload);
+
+        $response->assertStatus(401);
+        $this->assertSame('pending', $transaction->refresh()->status);
+        $this->assertNull($transaction->license_id);
+    }
+
+    // -------------------------------------------------------
+    // Callback flood → 429 (default 60,1)
+    // -------------------------------------------------------
+
+    public function test_callback_flood_returns_429_after_limit_exceeded(): void
+    {
+        $payload = ['merchant_ref' => 'UNKNOWN-REF', 'status' => 'PAID'];
+
+        for ($i = 0; $i < 60; $i++) {
+            $this->postJson('/api/tripay/callback', $payload, [
+                'X-Callback-Signature' => 'invalid',
+            ])->assertStatus(401);
+        }
+
+        $this->postJson('/api/tripay/callback', $payload, [
+            'X-Callback-Signature' => 'invalid',
+        ])->assertStatus(429);
+    }
 }

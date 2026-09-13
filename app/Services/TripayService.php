@@ -38,6 +38,10 @@ class TripayService
      */
     public function validateCallback(string $rawBody, string $signature): bool
     {
+        if ($signature === '' || $this->privateKey === '') {
+            return false;
+        }
+
         $expected = hash_hmac('sha256', $rawBody, $this->privateKey);
         return hash_equals($expected, $signature);
     }
