@@ -455,10 +455,11 @@
 
                             <div class="space-y-3 mb-4">
                                 <div>
-                                    <label id="contactLabel" class="text-gray-400 text-xs block mb-1.5 font-medium">Email <span
+                                    <label id="contactLabel" class="text-gray-400 text-xs block mb-1.5 font-medium">Email login <span
                                             class="text-[#ff7900]">*</span></label>
-                                    <input type="email" id="waInput" placeholder="cth: email@domain.com"
-                                        class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all">
+                                    <input type="email" id="waInput" value="{{ auth()->user()->email }}" readonly
+                                        class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all opacity-80">
+                                    <p class="text-gray-600 text-[11px] mt-1.5"><i class="fas fa-lock mr-1 text-[#ff7900]/50"></i> Terkunci ke email login Google agar struk selalu nyambung.</p>
                                 </div>
 
                                 <div id="proofWrap" class="hidden">

@@ -216,7 +216,25 @@
                 </div>
 
                 <!-- CTA -->
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
+                    @auth
+                        <a href="{{ route('history.index') }}"
+                            class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-200 border border-white/10 hover:border-white/25 hover:text-white transition-all flex items-center gap-2">
+                            <i class="fas fa-receipt text-komik-primary"></i> Riwayat
+                        </a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit"
+                                class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-all">
+                                Keluar
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ route('auth.google.redirect') }}"
+                            class="px-4 py-2 rounded-lg text-sm font-bold bg-white text-gray-900 hover:bg-gray-100 transition-all flex items-center gap-2">
+                            <i class="fab fa-google text-[#ff7900]"></i> Masuk dengan Google
+                        </a>
+                    @endauth
                     <a href="{{ route('download.index') }}"
                         class="btn-primary px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-komik-primary/20 hover:shadow-komik-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2">
                         <i class="fab fa-android text-lg"></i> Download App
@@ -225,6 +243,21 @@
             </div>
         </div>
     </nav>
+
+    @if(session('error') || session('status'))
+        <div class="fixed top-24 left-1/2 -translate-x-1/2 z-[60] max-w-md w-[calc(100%-2rem)]">
+            @if(session('error'))
+                <div class="bg-red-500/15 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl text-sm text-center backdrop-blur-xl">
+                    <i class="fas fa-exclamation-circle mr-1"></i> {{ session('error') }}
+                </div>
+            @endif
+            @if(session('status'))
+                <div class="bg-green-500/15 border border-green-500/30 text-green-300 px-4 py-3 rounded-xl text-sm text-center backdrop-blur-xl">
+                    <i class="fas fa-check-circle mr-1"></i> {{ session('status') }}
+                </div>
+            @endif
+        </div>
+    @endif
 
     <!-- Hero Section -->
     <section class="relative pt-32 pb-20 overflow-hidden hero-glow">
@@ -254,6 +287,52 @@
                     class="px-8 py-3 rounded-md bg-[#333] hover:bg-[#444] text-white font-medium transition-all">
                     Fitur Lengkap
                 </a>
+            </div>
+
+            <div class="mt-6 flex flex-col items-center gap-2">
+                @auth
+                    <a href="{{ route('history.index') }}"
+                        class="px-6 py-3 rounded-md bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all flex items-center gap-2">
+                        <i class="fas fa-receipt text-[#ff7900]"></i> Lihat Riwayat Pembelian
+                    </a>
+                    <p class="text-gray-500 text-xs">Masuk sebagai {{ auth()->user()->email }}</p>
+                @else
+                    <a href="{{ route('auth.google.redirect') }}"
+                        class="px-6 py-3 rounded-md bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all flex items-center gap-2 shadow-lg">
+                        <i class="fab fa-google text-[#ff7900]"></i> Masuk dengan Google
+                    </a>
+                    <p class="text-gray-500 text-xs">Masuk untuk melihat <a href="{{ route('history.index') }}" class="text-komik-primary hover:underline">Riwayat Pembelian</a> • Tetap bisa <a href="{{ route('orders.index') }}" class="text-gray-300 hover:underline">Cek Pesanan manual</a></p>
+                @endauth
+            </div>
+        </div>
+    </section>
+
+    <!-- Akun & Riwayat (Google Login) -->
+    <section id="akun" class="py-6 relative z-10">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="glass-card rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4 text-left">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-xl flex-shrink-0">
+                        <i class="fab fa-google text-[#ff7900]"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-white font-bold">Akun & Riwayat Pembelian</h2>
+                        <p class="text-gray-400 text-sm">Satu klik masuk dengan Google, tanpa password. Riwayat tampil berdasarkan email login.</p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    @auth
+                        <a href="{{ route('history.index') }}"
+                            class="inline-block px-6 py-3 rounded-md bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all">
+                            Buka Riwayat
+                        </a>
+                    @else
+                        <a href="{{ route('auth.google.redirect') }}"
+                            class="inline-block px-6 py-3 rounded-md bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all">
+                            Masuk dengan Google
+                        </a>
+                    @endauth
+                </div>
             </div>
         </div>
     </section>
@@ -467,6 +546,12 @@
                         class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">Contact</a>
                     <a href="{{ route('page.show', 'dmca') }}"
                         class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">DMCA</a>
+                    <a href="{{ route('page.show', 'privacy-policy') }}"
+                        class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">Kebijakan
+                        Privasi</a>
+                    <a href="{{ route('page.show', 'terms') }}"
+                        class="hover:text-komik-primary hover:shadow-glow transition-all duration-300">Syarat &
+                        Ketentuan</a>
                 </div>
 
                 <!-- Social Icons -->

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Transaction;
+use App\Models\User;
 use App\Services\TripayService;
 use App\Settings\PaymentSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,6 +46,14 @@ class CheckoutTripayTest extends TestCase
         $gateway->save();
     }
 
+    private function loginAs(string $email = 'buyer@example.com'): User
+    {
+        $user = User::factory()->create(['email' => $email]);
+        $this->actingAs($user);
+
+        return $user;
+    }
+
     // -------------------------------------------------------
     // 9.6 Checkout with Tripay enabled → stores reference
     // -------------------------------------------------------
@@ -77,6 +86,8 @@ class CheckoutTripayTest extends TestCase
             ], 200),
         ]);
 
+        $this->loginAs();
+
         $response = $this->postJson('/api/checkout', [
             'plan_name'        => 'Starter',
             'device_quota'     => 1,
@@ -102,6 +113,7 @@ class CheckoutTripayTest extends TestCase
     public function test_checkout_with_tripay_disabled_falls_back_to_manual(): void
     {
         config(['tripay.is_enabled' => false]);
+        $this->loginAs();
 
         $response = $this->postJson('/api/checkout', [
             'plan_name'        => 'Starter',
@@ -148,6 +160,8 @@ class CheckoutTripayTest extends TestCase
             ], 503),
         ]);
 
+        $this->loginAs();
+
         $response = $this->postJson('/api/checkout', [
             'plan_name'        => 'Starter',
             'device_quota'     => 1,
@@ -163,5 +177,34 @@ class CheckoutTripayTest extends TestCase
         $transaction = Transaction::where('customer_contact', 'buyer@example.com')->first();
         $this->assertNotNull($transaction);
         $this->assertNull($transaction->tripay_reference);
+    }
+
+    public function test_checkout_guest_is_unauthorized(): void
+    {
+        $this->postJson('/api/checkout', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'buyer@example.com',
+            'payment_method' => 'BRIVA',
+        ])->assertStatus(401);
+    }
+
+    public function test_checkout_locks_contact_to_login_email(): void
+    {
+        config(['tripay.is_enabled' => false]);
+        $this->loginAs('buyer@example.com');
+
+        $response = $this->postJson('/api/checkout', [
+            'plan_name' => 'Starter',
+            'device_quota' => 1,
+            'duration_months' => 1,
+            'customer_contact' => 'other@example.com',
+            'payment_method' => 'BRIVA',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('transactions', ['customer_contact' => 'buyer@example.com']);
+        $this->assertDatabaseMissing('transactions', ['customer_contact' => 'other@example.com']);
     }
 }

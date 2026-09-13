@@ -19,12 +19,27 @@ class CheckoutController extends Controller
 
     public function store(Request $request, \App\Settings\PricingSettings $settings)
     {
+        // 8.11 Honeypot check — reject silently if filled (sebelum auth agar bot tidak tahu).
+        if ($this->isHoneypotFilled($request)) {
+            return $this->success([
+                'transaction_id'   => null,
+                'transaction_code' => 'KURON-INV-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(4)),
+                'message'          => 'Order received successfully!',
+            ]);
+        }
+
+        // Wajib login Google — customer_contact dikunci ke email login.
+        $loginEmail = $request->user()?->email;
+        if (empty($loginEmail)) {
+            return $this->error('Wajib login Google untuk checkout.', 401);
+        }
+
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'plan_name' => 'required|string',
             'device_quota' => 'required|integer|min:1',
             'duration_months' => 'required|integer|min:1',
-            // We authorize amount calculation on backend, but keep key for structure validation if needed
-            'customer_contact' => 'required|string',
+            // customer_contact opsional dari client; diabaikan dan dikunci ke email login.
+            'customer_contact' => 'nullable|string',
             'proof_digits' => 'nullable|string|max:5',
             'amount' => 'nullable|numeric|min:1000', // For Donation
             'voucher_code' => 'nullable|string',
@@ -35,16 +50,9 @@ class CheckoutController extends Controller
             return $this->validationError($validator->errors());
         }
 
-        // 8.11 Honeypot check — reject silently if filled
-        if ($this->isHoneypotFilled($request)) {
-            return $this->success([
-                'transaction_id'   => null,
-                'transaction_code' => 'KURON-INV-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(4)),
-                'message'          => 'Order received successfully!',
-            ]);
-        }
-
         $validated = $validator->validated();
+        // Kunci ke email login agar riwayat selalu nyambung.
+        $validated['customer_contact'] = $loginEmail;
 
         try {
             $planName = $validated['plan_name'];
@@ -285,11 +293,26 @@ class CheckoutController extends Controller
      */
     public function storeFansku(Request $request, \App\Settings\PricingSettings $settings)
     {
+        // Honeypot check — reject silently if filled (sebelum auth agar bot tidak tahu).
+        if ($this->isHoneypotFilled($request)) {
+            return $this->success([
+                'transaction_id'   => null,
+                'transaction_code' => 'KURON-INV-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(4)),
+                'message'          => 'Order received successfully!',
+            ]);
+        }
+
+        // Wajib login Google — customer_contact dikunci ke email login.
+        $loginEmail = $request->user()?->email;
+        if (empty($loginEmail)) {
+            return $this->error('Wajib login Google untuk checkout.', 401);
+        }
+
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'plan_name' => 'required|string',
             'device_quota' => 'required|integer|min:1',
             'duration_months' => 'required|integer|min:1',
-            'customer_contact' => 'required|email',
+            'customer_contact' => 'nullable|email',
             'proof_digits' => 'nullable|string|max:5',
             'amount' => 'nullable|numeric|min:1000', // For Donation
             'voucher_code' => 'nullable|string',
@@ -299,16 +322,9 @@ class CheckoutController extends Controller
             return $this->validationError($validator->errors());
         }
 
-        // Honeypot check — reject silently if filled
-        if ($this->isHoneypotFilled($request)) {
-            return $this->success([
-                'transaction_id'   => null,
-                'transaction_code' => 'KURON-INV-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(4)),
-                'message'          => 'Order received successfully!',
-            ]);
-        }
-
         $validated = $validator->validated();
+        // Kunci ke email login agar riwayat selalu nyambung.
+        $validated['customer_contact'] = $loginEmail;
 
         try {
             if (! app(\App\Settings\PaymentGatewaySettings::class)->fansku_enabled) {
@@ -392,8 +408,13 @@ class CheckoutController extends Controller
      * QRIS payment status for one transaction, rehydrated from stored data.
      * Backs the reload-safe /bayar/qris/{code} page and its status polling.
      */
-    public function showFansku(Transaction $transaction)
+    public function showFansku(Request $request, Transaction $transaction)
     {
+        // Hanya pemilik email yang boleh melihat QR/status.
+        if ($transaction->customer_contact !== $request->user()?->email) {
+            return $this->error('Transaksi tidak ditemukan.', 404);
+        }
+
         if (! $transaction->fansku_support_id) {
             return $this->error('Transaksi ini bukan pembayaran QRIS otomatis.', 404);
         }

@@ -4,20 +4,28 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/user', [\App\Http\Controllers\ApiController::class, 'me'])->middleware('auth:sanctum');
 
+// Login mobile: tukar Google ID token -> Sanctum Bearer token.
+Route::post('/auth/google/mobile', [\App\Http\Controllers\Api\GoogleMobileAuthController::class, 'login'])
+    ->middleware('throttle:20,1');
+
 Route::get('/config', [\App\Http\Controllers\ApiController::class, 'config']);
 Route::get('/plans', [\App\Http\Controllers\ApiController::class, 'plans']);
 Route::get('/faqs', [\App\Http\Controllers\ApiController::class, 'faqs']);
 Route::get('/payment-methods', [\App\Http\Controllers\ApiController::class, 'paymentMethods']);
 
+// Checkout wajib login Google (web session atau Sanctum Bearer mobile).
+// customer_contact dikunci ke email user login di controller.
 Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store'])
-    ->middleware('throttle:' . config('tripay.rate_limit.checkout', '5,10'));
+    ->middleware(['auth:sanctum', 'throttle:' . config('tripay.rate_limit.checkout', '5,10')]);
 
 // Dedicated QRIS Otomatis (Fansku) checkout — strict, no silent fallback.
 Route::post('/checkout/fansku', [\App\Http\Controllers\CheckoutController::class, 'storeFansku'])
-    ->middleware('throttle:' . config('tripay.rate_limit.checkout', '5,10'));
+    ->middleware(['auth:sanctum', 'throttle:' . config('tripay.rate_limit.checkout', '5,10')]);
 
 // QRIS payment status (backs the reload-safe /bayar/qris/{code} page + polling).
-Route::get('/checkout/fansku/{transaction:code}', [\App\Http\Controllers\CheckoutController::class, 'showFansku']);
+// Dikunci ke pemilik email agar QR/status tidak bisa diintip orang lain.
+Route::get('/checkout/fansku/{transaction:code}', [\App\Http\Controllers\CheckoutController::class, 'showFansku'])
+    ->middleware('auth:sanctum');
 Route::post('/check-voucher', [\App\Http\Controllers\ApiController::class, 'checkVoucher']);
 Route::post('/check-license', [\App\Http\Controllers\LicenseController::class, 'check']);
 Route::post('/error-report', [\App\Http\Controllers\Api\ErrorReportController::class, 'store']);

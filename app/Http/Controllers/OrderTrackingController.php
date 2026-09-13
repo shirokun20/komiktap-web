@@ -11,29 +11,11 @@ class OrderTrackingController extends Controller
     use HoneypotTrait;
 
     /**
-     * Show the order lookup form.
+     * Show the order lookup form (wajib login; otomatis milik email login).
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('orders.index');
-    }
-
-    /**
-     * Look up orders by customer contact (email or WA).
-     */
-    public function lookup(Request $request)
-    {
-        // 8.13 Honeypot check
-        if ($this->isHoneypotFilled($request)) {
-            // Fake success — return empty results silently
-            return view('orders.index', ['transactions' => collect(), 'searched' => true, 'contact' => '']);
-        }
-
-        $request->validate([
-            'contact' => 'required|string|min:5|max:255',
-        ]);
-
-        $contact = trim($request->input('contact'));
+        $contact = $request->user()->email;
 
         $transactions = Transaction::where('customer_contact', $contact)
             ->orderByDesc('created_at')
@@ -47,11 +29,37 @@ class OrderTrackingController extends Controller
     }
 
     /**
-     * Show a single transaction detail.
+     * Look up orders — dikunci ke email login (input manual diabaikan).
      */
-    public function show(string $code)
+    public function lookup(Request $request)
     {
-        $transaction = Transaction::where('code', $code)->firstOrFail();
+        $contact = $request->user()->email;
+
+        // 8.13 Honeypot check
+        if ($this->isHoneypotFilled($request)) {
+            // Fake success — return empty results silently
+            return view('orders.index', ['transactions' => collect(), 'searched' => true, 'contact' => '']);
+        }
+
+        $transactions = Transaction::where('customer_contact', $contact)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('orders.index', [
+            'transactions' => $transactions,
+            'searched'     => true,
+            'contact'      => $contact,
+        ]);
+    }
+
+    /**
+     * Show a single transaction detail (hanya milik email login).
+     */
+    public function show(Request $request, string $code)
+    {
+        $transaction = Transaction::where('code', $code)
+            ->where('customer_contact', $request->user()->email)
+            ->firstOrFail();
 
         return view('orders.show', compact('transaction'));
     }
