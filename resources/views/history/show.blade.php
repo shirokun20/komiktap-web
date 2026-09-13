@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -140,6 +141,54 @@
                 </div>
                 @endif
 
+                @if($transaction->status === 'pending' && $transaction->fansku_support_id)
+                <hr class="border-white/5">
+
+                <!-- Lanjutkan Pembayaran QRIS -->
+                <div>
+                    <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">
+                        <i class="fas fa-qrcode text-[#ff7900] mr-1"></i> Lanjutkan Pembayaran QRIS
+                    </p>
+                    <div class="bg-[#ff7900]/5 border border-[#ff7900]/20 rounded-xl p-5 text-center space-y-4">
+                        @if($qrString)
+                        <div class="flex justify-center">
+                            <div class="bg-white p-3 rounded-2xl shadow-xl inline-block" id="qrBox"></div>
+                        </div>
+                        <p class="text-gray-500 text-xs"><i class="fas fa-qrcode mr-1"></i> Scan ulang dengan e-Wallet / m-banking untuk menyelesaikan pembayaran</p>
+                        @else
+                        <p class="text-yellow-400 text-sm">QR tidak tersedia di halaman ini. Buka halaman QRIS penuh untuk memuat ulang.</p>
+                        @endif
+
+                        <div class="bg-white/3 rounded-xl px-4 py-3 border border-white/6 space-y-2 text-sm text-left">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-gray-400">Nominal Pesanan</span>
+                                <span class="text-white font-semibold">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-gray-400">Biaya Layanan QRIS</span>
+                                <span class="text-white font-semibold">IDR {{ number_format($fee, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-white/6">
+                                <span class="text-gray-400">Total Bayar</span>
+                                <span class="text-[#ff7900] font-bold text-lg">IDR {{ number_format($total, 0, ',', '.') }}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button onclick="cekUlangStatus()" id="cekUlangBtn"
+                                class="flex-1 py-2.5 rounded-xl bg-[#ff7900] hover:bg-[#ff9100] text-white text-sm font-bold transition-colors">
+                                <i class="fas fa-sync-alt mr-1"></i> Cek Ulang Status
+                            </button>
+                            <a href="/bayar/qris/{{ $transaction->code }}"
+                                class="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-300 hover:text-white hover:border-white/20 text-sm transition-colors">
+                                <i class="fas fa-expand mr-1"></i> Halaman QRIS
+                            </a>
+                        </div>
+                        <p class="text-gray-600 text-[11px]"><i class="fas fa-sync-alt fa-spin mr-1 text-[#ff7900]/50"></i> Status dicek otomatis tiap 10 detik…</p>
+                    </div>
+                </div>
+                @endif
+
                 <hr class="border-white/5">
 
                 <!-- Actions -->
@@ -191,6 +240,63 @@
             toast.classList.remove('translate-y-24', 'opacity-0');
             setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 3000);
         }
+
+        @if($transaction->status === 'pending' && $transaction->fansku_support_id)
+        const TX_CODE = @json($transaction->code);
+        const QR_STRING = @json($qrString);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (QR_STRING && document.getElementById('qrBox')) {
+                new QRCode(document.getElementById('qrBox'), {
+                    text: QR_STRING,
+                    width: 220,
+                    height: 220,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+            setTimeout(pollStatus, 10000);
+        });
+
+        async function fetchTxStatus() {
+            const res = await fetch(`/api/checkout/fansku/${encodeURIComponent(TX_CODE)}`);
+            return res.json();
+        }
+
+        function isPaid(json) {
+            return json.status === 'success' && (json.data.status === 'approved' || json.data.fansku_status === 'paid');
+        }
+
+        async function pollStatus() {
+            try {
+                if (isPaid(await fetchTxStatus())) {
+                    window.location.reload();
+                    return;
+                }
+            } catch (e) {
+                // Network hiccup — keep polling.
+            }
+            setTimeout(pollStatus, 10000);
+        }
+
+        async function cekUlangStatus() {
+            const btn = document.getElementById('cekUlangBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Mengecek…';
+            try {
+                if (isPaid(await fetchTxStatus())) {
+                    window.location.reload();
+                    return;
+                }
+                showToast('Status masih pending, silakan scan QRIS.');
+            } catch (e) {
+                showToast('Gagal mengecek status, coba lagi.');
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Cek Ulang Status';
+        }
+        @endif
     </script>
 </body>
 </html>

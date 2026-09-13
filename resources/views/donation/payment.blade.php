@@ -38,6 +38,81 @@
             box-sizing: border-box;
         }
 
+        /* Instructions drawer content (admin markdown -> HTML): numbered steps + readable type */
+        #instructionsBody > * + * {
+            margin-top: 1rem;
+        }
+        #instructionsBody ol,
+        #instructionsBody ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.875rem;
+        }
+        #instructionsBody ol {
+            counter-reset: pay-step;
+        }
+        #instructionsBody ol > li {
+            counter-increment: pay-step;
+            position: relative;
+            padding-left: 3rem;
+            min-height: 2.25rem;
+        }
+        #instructionsBody ol > li::before {
+            content: counter(pay-step);
+            position: absolute;
+            left: 0;
+            top: 0.1rem;
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 0.75rem;
+            background: rgba(255, 121, 0, 0.12);
+            border: 1px solid rgba(255, 121, 0, 0.35);
+            color: #ff7900;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #instructionsBody ul > li {
+            position: relative;
+            padding-left: 1.75rem;
+        }
+        #instructionsBody ul > li::before {
+            content: '';
+            position: absolute;
+            left: 0.35rem;
+            top: 0.7rem;
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 9999px;
+            background: #ff7900;
+        }
+        #instructionsBody p {
+            margin: 0 0 0.875rem;
+        }
+        #instructionsBody p:last-child {
+            margin-bottom: 0;
+        }
+        #instructionsBody strong {
+            color: #fff;
+        }
+        #instructionsBody a {
+            color: #ff7900;
+            text-decoration: underline;
+        }
+        #instructionsBody code {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 0.5rem;
+            padding: 0.1rem 0.5rem;
+            font-size: 0.95em;
+            color: #ffd9ad;
+        }
+
         body {
             background-color: #0f0e13;
             color: #b8b8b8;
@@ -513,22 +588,22 @@
     <!-- Instructions Drawer -->
     <div id="instructionsDrawer" class="fixed inset-0 z-[100] hidden">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeInstructions()"></div>
-        <div class="absolute bottom-0 inset-x-0 max-h-[80vh] bg-[#1a1924] border-t border-white/8 rounded-t-3xl overflow-hidden flex flex-col shadow-2xl"
+        <div class="absolute bottom-0 inset-x-0 sm:mx-auto sm:max-w-2xl sm:bottom-6 max-h-[80vh] sm:max-h-[85vh] bg-[#1a1924] border-t sm:border border-white/8 rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl"
             style="transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);"
             id="instructionsDrawerContent">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-white/6 flex-shrink-0">
+            <div class="flex items-center justify-between px-6 py-5 border-b border-white/6 flex-shrink-0">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-[#ff7900]/15 flex items-center justify-center">
-                        <i class="fas fa-list-check text-[#ff7900] text-sm"></i>
+                    <div class="w-10 h-10 rounded-xl bg-[#ff7900]/15 flex items-center justify-center">
+                        <i class="fas fa-list-check text-[#ff7900] text-base"></i>
                     </div>
-                    <h3 class="text-white font-bold">Cara Pembayaran</h3>
+                    <h3 class="text-white font-bold text-lg">Cara Pembayaran</h3>
                 </div>
                 <button onclick="closeInstructions()"
-                    class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
-                    <i class="fas fa-times text-sm"></i>
+                    class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times text-base"></i>
                 </button>
             </div>
-            <div class="overflow-y-auto flex-1 px-6 py-5 text-sm text-gray-300 leading-relaxed space-y-3"
+            <div class="overflow-y-auto flex-1 px-6 py-6 sm:px-8 text-base text-gray-200 leading-relaxed"
                 id="instructionsBody">
                 <!-- Populated by JS -->
             </div>
@@ -735,14 +810,14 @@
 
                     ${method.instructions ? `
                     <!-- Instructions CTA -->
-                    <button onclick="openInstructions(${i})" class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-[#ff7900]/8 border border-[#ff7900]/20 hover:bg-[#ff7900]/15 hover:border-[#ff7900]/40 transition-all group">
+                    <button onclick="openInstructions(${i})" class="w-full flex items-center justify-between gap-3 px-5 py-4 rounded-xl bg-[#ff7900]/8 border border-[#ff7900]/20 hover:bg-[#ff7900]/15 hover:border-[#ff7900]/40 transition-all group">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-[#ff7900]/10 flex items-center justify-center">
-                                <i class="fas fa-list-check text-[#ff7900] text-sm"></i>
+                            <div class="w-10 h-10 rounded-xl bg-[#ff7900]/10 flex items-center justify-center">
+                                <i class="fas fa-list-check text-[#ff7900] text-base"></i>
                             </div>
-                            <span class="text-[#ff7900] text-sm font-medium">Lihat Cara Pembayaran</span>
+                            <span class="text-[#ff7900] text-base font-semibold">Lihat Cara Pembayaran</span>
                         </div>
-                        <i class="fas fa-chevron-right text-[#ff7900]/60 text-xs group-hover:translate-x-1 transition-transform"></i>
+                        <i class="fas fa-chevron-right text-[#ff7900]/60 text-sm group-hover:translate-x-1 transition-transform"></i>
                     </button>
                     ` : ''}
 
