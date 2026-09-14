@@ -85,63 +85,63 @@
         <div class="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
             <div class="mb-6 sm:mb-8 text-center sm:text-left">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ff7900]/10 border border-[#ff7900]/20 text-[#ff7900] text-xs font-semibold tracking-wider mb-3">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ff7900]/10 border border-[#ff7900]/20 text-[#ff7900] text-sm font-semibold tracking-wider mb-3">
                     <i class="fas fa-qrcode"></i>
                     <span>QRIS Otomatis</span>
                 </div>
                 <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight">Scan QRIS untuk Membayar</h1>
-                <p class="text-gray-400 text-xs sm:text-sm mt-1">Halaman ini aman di-refresh — data QR tersimpan di server.</p>
+                <p class="text-gray-200 text-base sm:text-lg mt-1">Halaman ini aman di-refresh — data QR tersimpan di server.</p>
             </div>
 
             <div class="glass-card rounded-2xl p-5 sm:p-6">
                 <div id="payPanel" class="space-y-4">
-                    <div class="flex items-center gap-2 text-green-400 text-sm font-semibold">
+                    <div class="flex items-center gap-2 text-green-400 text-base sm:text-lg font-semibold leading-relaxed">
                         <i class="fas fa-check-circle"></i>
                         <span>{{ $isDonation ? 'Donasi' : 'Pesanan' }} dibuat! Scan QRIS di bawah untuk membayar.</span>
                     </div>
 
-                    <div class="flex items-center justify-between text-sm gap-2">
-                        <span class="text-gray-500">{{ $isDonation ? 'Donasi' : 'Paket' }}</span>
+                    <div class="flex items-center justify-between text-base sm:text-lg gap-2">
+                        <span class="text-gray-200">{{ $isDonation ? 'Donasi' : 'Paket' }}</span>
                         <span class="text-white font-semibold text-right break-words min-w-0">{{ $transaction->plan_name }}</span>
                     </div>
 
-                    <div class="bg-white/3 rounded-xl px-4 py-3 border border-white/6 space-y-2 text-sm">
+                    <div class="bg-white/3 rounded-xl px-4 py-3 border border-white/6 space-y-2 text-base sm:text-lg">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="text-gray-400">Nominal {{ $isDonation ? 'Donasi' : 'Pesanan' }}</span>
+                            <span class="text-gray-100">Nominal {{ $isDonation ? 'Donasi' : 'Pesanan' }}</span>
                             <span class="text-white font-semibold">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex items-center justify-between gap-2">
-                            <span class="text-gray-400">Biaya Layanan QRIS (0,6%)</span>
+                            <span class="text-gray-100">Biaya Layanan QRIS (0,6%)</span>
                             <span class="text-white font-semibold">IDR {{ number_format($fee, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex items-center justify-between gap-2 pt-2 border-t border-white/6">
-                            <span class="text-gray-400">Total {{ $isDonation ? 'Donasi' : 'Bayar' }}</span>
-                            <span class="text-[#ff7900] font-bold text-lg">IDR {{ number_format($total, 0, ',', '.') }}</span>
+                            <span class="text-gray-100">Total {{ $isDonation ? 'Donasi' : 'Bayar' }}</span>
+                            <span class="text-[#ff7900] font-bold text-xl sm:text-2xl">IDR {{ number_format($total, 0, ',', '.') }}</span>
                         </div>
                     </div>
-                    <p class="text-gray-600 text-[11px] leading-relaxed">
-                        <i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i>
+                    <p class="text-gray-100 text-base sm:text-lg leading-relaxed font-medium">
+                        <i class="fas fa-info-circle mr-1 text-[#ff7900]"></i>
                         Biaya layanan diteruskan ke penyedia pembayaran (Fansku/Xendit), bukan tambahan dari KomikTap.
                     </p>
 
                     @if($qrString)
                     <div class="flex flex-col items-center gap-2 pt-1">
-                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase">Scan QRIS (Fansku)</p>
+                        <p class="text-white text-base sm:text-lg font-semibold tracking-wider uppercase">Scan QRIS (Fansku)</p>
                         <div class="bg-white p-3 rounded-2xl shadow-xl inline-block" id="qrBox"></div>
-                        <p class="text-center text-gray-600 text-xs mt-1"><i class="fas fa-qrcode mr-1"></i> Scan dengan aplikasi e-Wallet / m-banking</p>
+                        <p class="text-center text-gray-100 text-base sm:text-lg mt-1"><i class="fas fa-qrcode mr-1 text-gray-100"></i> Scan dengan aplikasi e-Wallet / m-banking</p>
                     </div>
                     @else
-                    <p class="text-red-400 text-sm text-center">QR tidak tersedia. Hubungi admin.</p>
+                    <p class="text-red-400 text-base text-center">QR tidak tersedia. Hubungi admin.</p>
                     @endif
 
-                    <div class="text-xs text-gray-500 text-center font-mono break-all">Ref: {{ $transaction->code }}</div>
+                    <div class="text-sm sm:text-base text-gray-300 text-center font-mono break-all">Ref: {{ $transaction->code }}</div>
 
-                    <div class="flex items-center justify-center gap-2 text-gray-600 text-xs pt-1">
-                        <i class="fas fa-sync-alt fa-spin text-[#ff7900]/50"></i>
+                    <div class="flex items-center justify-center gap-2 text-white text-base sm:text-lg font-medium pt-1">
+                        <i class="fas fa-sync-alt fa-spin text-[#ff7900]"></i>
                         <span>Memeriksa status pembayaran otomatis…</span>
                     </div>
 
-                    <a href="/success/{{ $transaction->code }}" class="block w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                    <a href="/success/{{ $transaction->code }}" class="block w-full text-center text-base sm:text-lg text-white font-semibold hover:text-[#ff7900] transition-colors underline underline-offset-4 decoration-white/30 hover:decoration-[#ff7900]/60">
                         Lihat status pesanan →
                     </a>
                 </div>

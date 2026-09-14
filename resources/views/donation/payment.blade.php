@@ -421,12 +421,12 @@
             <!-- Page Header -->
             <div class="mb-8 text-center sm:text-left">
                 <div
-                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ff7900]/10 border border-[#ff7900]/20 text-[#ff7900] text-xs font-semibold tracking-wider mb-3">
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ff7900]/10 border border-[#ff7900]/20 text-[#ff7900] text-sm font-semibold tracking-wider mb-3">
                     <i class="fas fa-shield-heart"></i>
                     <span>Pembayaran Aman</span>
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-bold text-white leading-tight">Pilih Metode Pembayaran</h1>
-                <p class="text-gray-400 text-sm mt-1 max-w-md">Pilih metode yang paling nyaman untuk menyelesaikan
+                <p class="text-gray-200 text-base sm:text-lg mt-1 max-w-md">Pilih metode yang paling nyaman untuk menyelesaikan
                     donasi Anda.</p>
             </div>
 
@@ -437,7 +437,7 @@
 
                     <!-- Donation Summary Card -->
                     <div class="glass-card rounded-2xl p-5">
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Ringkasan Donasi
+                        <p class="text-sm sm:text-base font-semibold text-gray-200 uppercase tracking-wider mb-3">Ringkasan Donasi
                         </p>
                         <div class="flex items-start gap-3 mb-4">
                             @if($campaign->image_path)
@@ -452,16 +452,16 @@
                             </div>
                             @endif
                             <div class="flex-1 min-w-0">
-                                <p class="text-white font-semibold text-sm leading-snug truncate">{{ $campaign->title }}
+                                <p class="text-white font-semibold text-base sm:text-lg leading-snug truncate">{{ $campaign->title }}
                                 </p>
-                                <p class="text-gray-500 text-xs mt-0.5">KomikTap Peduli</p>
+                                <p class="text-gray-200 text-sm sm:text-base mt-0.5">KomikTap Peduli</p>
                             </div>
                         </div>
                         <div class="border-t border-white/5 pt-4">
                             <div class="flex justify-between items-center">
-                                <span class="text-gray-400 text-sm">Total Donasi</span>
+                                <span class="text-gray-100 text-base sm:text-lg">Total Donasi</span>
                                 <div class="amount-badge px-3 py-1 rounded-full">
-                                    <span class="text-[#ff7900] font-bold text-lg" id="amountDisplay">IDR 0</span>
+                                    <span class="text-[#ff7900] font-bold text-xl sm:text-2xl" id="amountDisplay">IDR 0</span>
                                 </div>
                             </div>
                         </div>
@@ -469,7 +469,7 @@
 
                     <!-- Payment Methods List (hidden — Fansku QRIS otomatis) -->
                     <div class="glass-card rounded-2xl p-5 hidden" id="methodsCard">
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Metode Pembayaran
+                        <p class="text-sm sm:text-base font-semibold text-gray-200 uppercase tracking-wider mb-4">Metode Pembayaran
                         </p>
 
                         <!-- Skeleton Loading -->
@@ -484,8 +484,8 @@
 
                         <!-- Empty state -->
                         <div id="methodsEmpty" class="hidden text-center py-6">
-                            <i class="fas fa-wallet text-2xl text-gray-600 mb-2"></i>
-                            <p class="text-gray-500 text-sm">Tidak ada metode pembayaran tersedia.</p>
+                            <i class="fas fa-wallet text-2xl text-gray-300 mb-2"></i>
+                            <p class="text-gray-200 text-base sm:text-lg">Tidak ada metode pembayaran tersedia.</p>
                         </div>
                     </div>
                 </div>
@@ -501,10 +501,10 @@
                                     <i class="fas fa-qrcode text-xl" style="color: #7c3aed;"></i>
                                 </div>
                                 <div>
-                                    <h2 class="text-white font-bold text-lg leading-tight">QRIS Otomatis</h2>
+                                    <h2 class="text-white font-bold text-xl leading-tight">QRIS Otomatis</h2>
                                     <div class="flex items-center gap-1.5 mt-1">
                                         <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                                        <span class="text-gray-400 text-xs">Aktif &amp; Tersedia</span>
+                                        <span class="text-gray-100 text-sm sm:text-base">Aktif &amp; Tersedia</span>
                                     </div>
                                 </div>
                             </div>
@@ -514,10 +514,10 @@
                         <div id="placeholderState" class="text-center py-12 hidden">
                             <div
                                 class="w-20 h-20 rounded-2xl bg-white/4 border border-white/6 flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-credit-card text-3xl text-gray-600"></i>
+                                <i class="fas fa-credit-card text-3xl text-gray-400"></i>
                             </div>
-                            <h3 class="text-white font-semibold mb-2">Pilih Metode Terlebih Dahulu</h3>
-                            <p class="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">Pilih salah satu metode
+                            <h3 class="text-white font-semibold text-lg mb-2">Pilih Metode Terlebih Dahulu</h3>
+                            <p class="text-gray-200 text-base sm:text-lg leading-relaxed max-w-xs mx-auto">Pilih salah satu metode
                                 pembayaran di sebelah kiri untuk melihat detail dan instruksi pembayaran.</p>
                         </div>
 
@@ -526,23 +526,23 @@
 
                         <!-- Confirmation Form (shown when method selected) -->
                         <div id="confirmationForm" class="mt-0 pt-0 border-t-0">
-                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Data Donatur</p>
+                            <p class="text-sm sm:text-base font-semibold text-gray-200 uppercase tracking-wider mb-4">Data Donatur</p>
 
                             <div class="space-y-3 mb-4">
                                 <div>
-                                    <label id="contactLabel" class="text-gray-400 text-xs block mb-1.5 font-medium">Email login <span
+                                    <label id="contactLabel" class="text-gray-100 text-base block mb-1.5 font-medium">Email login <span
                                             class="text-[#ff7900]">*</span></label>
                                     <input type="email" id="waInput" value="{{ auth()->user()->email }}" readonly
-                                        class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all opacity-80">
-                                    <p class="text-gray-600 text-[11px] mt-1.5"><i class="fas fa-lock mr-1 text-[#ff7900]/50"></i> Terkunci ke email login Google agar struk selalu nyambung.</p>
+                                        class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-base text-white placeholder-gray-400 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all opacity-80">
+                                    <p class="text-gray-100 text-base sm:text-lg mt-1.5 leading-relaxed font-medium"><i class="fas fa-lock mr-1 text-[#ff7900]"></i> Terkunci ke email login Google agar struk selalu nyambung.</p>
                                 </div>
 
                                 <div id="proofWrap" class="hidden">
-                                    <label class="text-gray-400 text-xs block mb-1.5 font-medium">
-                                        3-5 Digit Terakhir Referensi Transfer <span class="text-gray-600">(opsional)</span>
+                                    <label class="text-gray-100 text-base block mb-1.5 font-medium">
+                                        3-5 Digit Terakhir Referensi Transfer <span class="text-gray-300">(opsional)</span>
                                     </label>
                                     <input type="text" id="proofInput" maxlength="8" placeholder="cth: 12345"
-                                        class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all font-mono tracking-widest">
+                                        class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-base text-white placeholder-gray-400 focus:outline-none focus:border-[#ff7900]/50 focus:ring-1 focus:ring-[#ff7900]/20 transition-all font-mono tracking-widest">
                                 </div>
                                 {{-- Honeypot field — hidden from humans, bots will fill it.
                                      display:none wrapper: browser autofill & password managers skip it,
@@ -553,18 +553,18 @@
                                         tabindex="-1" autocomplete="off" aria-hidden="true">
                                 </div>
                                 <button onclick="submitDonation()" id="submitBtnVisible"
-                                    class="btn-primary w-full text-white mt-3 px-5 py-3 rounded-xl text-sm font-bold">
+                                    class="btn-primary w-full text-white mt-3 px-5 py-3 rounded-xl text-base font-bold">
                                     Buat Kode QRIS
                                 </button>
-                                <p id="submitNote" class="text-gray-600 text-[11px] mt-2 leading-relaxed">
-                                    <i class="fas fa-info-circle mr-1 text-[#ff7900]/50"></i>
+                                <p id="submitNote" class="text-gray-100 text-base sm:text-lg mt-2 leading-relaxed font-medium">
+                                    <i class="fas fa-info-circle mr-1 text-[#ff7900]"></i>
                                     QRIS otomatis via Fansku — tanpa upload bukti transfer.
                                 </p>
                             </div>
 
                             <!-- Security badge -->
-                            <div class="flex items-center gap-2 text-gray-600 text-xs">
-                                <i class="fas fa-lock text-[#ff7900]/40"></i>
+                            <div class="flex items-center gap-2 text-gray-200 text-sm sm:text-base">
+                                <i class="fas fa-lock text-[#ff7900]"></i>
                                 <span>Data Anda diproses dengan aman &amp; terenkripsi</span>
                             </div>
                         </div>
@@ -734,7 +734,7 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-white text-sm font-semibold truncate">${method.name}</p>
-                        <p class="text-gray-500 text-xs mt-0.5">${method.account_number ? method.account_number : (method.qris_image_path ? 'Scan QRIS' : 'Lihat detail')}</p>
+                        <p class="text-gray-300 text-[13px] mt-0.5">${method.account_number ? method.account_number : (method.qris_image_path ? 'Scan QRIS' : 'Lihat detail')}</p>
                     </div>
                     <div class="method-radio"></div>
                 `;
@@ -758,53 +758,53 @@
                             <h2 class="text-white font-bold text-lg leading-tight">${method.name}</h2>
                             <div class="flex items-center gap-1.5 mt-1">
                                 <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                                <span class="text-gray-400 text-xs">Aktif &amp; Tersedia</span>
+                                <span class="text-gray-200 text-[13px] sm:text-sm">Aktif &amp; Tersedia</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Total amount reminder -->
                     <div class="flex items-center justify-between bg-white/3 rounded-xl px-4 py-3 mb-5 border border-white/6">
-                        <span class="text-gray-400 text-sm">Jumlah Transfer</span>
+                        <span class="text-gray-200 text-sm sm:text-[15px]">Jumlah Transfer</span>
                         <span class="text-[#ff7900] font-bold text-lg">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Math.round(Number(AMOUNT) || 0))}</span>
                     </div>
 
                     ${method.account_number ? `
                     <!-- Account Number -->
                     <div class="account-copy-card rounded-xl p-4 mb-5" onclick="copyText('${method.account_number}', 'Nomor rekening disalin!')">
-                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase mb-2">Nomor Rekening / VA</p>
+                        <p class="text-gray-300 text-[13px] sm:text-sm font-semibold tracking-wider uppercase mb-2">Nomor Rekening / VA</p>
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-white font-mono font-bold text-2xl tracking-widest">${method.account_number}</span>
                             <div class="w-9 h-9 rounded-lg bg-[#ff7900]/10 flex items-center justify-center flex-shrink-0">
                                 <i class="fas fa-copy text-[#ff7900] text-sm"></i>
                             </div>
                         </div>
-                        ${method.account_name ? `<p class="text-gray-400 text-xs mt-2 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#ff7900] inline-block"></span>${method.account_name}</p>` : `<p class="text-gray-400 text-xs mt-2 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#ff7900] inline-block"></span>CV KomikTap</p>`}
-                        <p class="text-gray-600 text-xs mt-2 flex items-center gap-1"><i class="fas fa-hand-pointer text-[10px]"></i> Ketuk untuk menyalin</p>
+                        ${method.account_name ? `<p class="text-gray-200 text-[13px] sm:text-sm mt-2 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#ff7900] inline-block"></span>${method.account_name}</p>` : `<p class="text-gray-200 text-[13px] sm:text-sm mt-2 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#ff7900] inline-block"></span>CV KomikTap</p>`}
+                        <p class="text-gray-300 text-[13px] sm:text-sm mt-2 flex items-center gap-1"><i class="fas fa-hand-pointer text-xs"></i> Ketuk untuk menyalin</p>
                     </div>
                     ` : ''}
 
                     ${method.qris_string ? `
                     <!-- Dynamic QRIS -->
                     <div class="mb-5">
-                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase mb-3">Kode QRIS Dinamis</p>
+                        <p class="text-gray-300 text-[13px] sm:text-sm font-semibold tracking-wider uppercase mb-3">Kode QRIS Dinamis</p>
                         <div class="flex justify-center">
                             <div class="bg-white p-4 rounded-2xl shadow-xl hover:scale-105 transition-transform inline-block">
                                 <div id="qris-dinamis-${i}"></div>
                             </div>
                         </div>
-                        <p class="text-center text-gray-600 text-xs mt-2"><i class="fas fa-qrcode mr-1"></i> Scan dengan aplikasi e-Wallet</p>
+                        <p class="text-center text-gray-300 text-sm mt-2"><i class="fas fa-qrcode mr-1"></i> Scan dengan aplikasi e-Wallet</p>
                     </div>
                     ` : (qrisUrl ? `
                     <!-- Static QRIS Image -->
                     <div class="mb-5">
-                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase mb-3">Kode QRIS</p>
+                        <p class="text-gray-300 text-[13px] sm:text-sm font-semibold tracking-wider uppercase mb-3">Kode QRIS</p>
                         <div class="flex justify-center">
                             <div class="bg-white p-3 rounded-2xl shadow-xl cursor-pointer hover:scale-105 transition-transform inline-block" onclick="openImageZoom('${qrisUrl}')" title="Ketuk untuk memperbesar">
                                 <img src="${qrisUrl}" alt="QRIS ${method.name}" class="w-44 h-44 object-contain rounded-lg">
                             </div>
                         </div>
-                        <p class="text-center text-gray-600 text-xs mt-2"><i class="fas fa-search-plus mr-1"></i> Ketuk gambar untuk memperbesar</p>
+                        <p class="text-center text-gray-300 text-sm mt-2"><i class="fas fa-search-plus mr-1"></i> Ketuk gambar untuk memperbesar</p>
                     </div>
                     ` : '')}
 
@@ -923,7 +923,7 @@
         // ====================================
         function openInstructions(index) {
             const data = document.getElementById(`inst-${index}`)?.innerHTML || '';
-            document.getElementById('instructionsBody').innerHTML = data || '<p class="text-gray-500">Tidak ada instruksi tersedia.</p>';
+            document.getElementById('instructionsBody').innerHTML = data || '<p class="text-gray-300 text-sm sm:text-base">Tidak ada instruksi tersedia.</p>';
 
             const drawer = document.getElementById('instructionsDrawer');
             const content = document.getElementById('instructionsDrawerContent');
@@ -1084,26 +1084,26 @@
             document.getElementById('methodsCard')?.classList.add('hidden');
             confirmForm.innerHTML = `
                 <div class="space-y-4">
-                    <div class="flex items-center gap-2 text-green-400 text-sm font-semibold mb-2">
+                    <div class="flex items-center gap-2 text-green-400 text-sm sm:text-[15px] font-semibold mb-2">
                         <i class="fas fa-check-circle"></i> Donasi dibuat! Selesaikan pembayaran di bawah.
                     </div>
 
                     ${tripay.pay_code ? `
                     <div class="account-copy-card rounded-xl p-4" onclick="copyText('${tripay.pay_code}', 'Kode pembayaran disalin!')">
-                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase mb-2">Nomor VA / Kode Bayar</p>
+                        <p class="text-gray-300 text-[13px] sm:text-sm font-semibold tracking-wider uppercase mb-2">Nomor VA / Kode Bayar</p>
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-white font-mono font-bold text-xl tracking-widest">${tripay.pay_code}</span>
                             <div class="w-9 h-9 rounded-lg bg-[#ff7900]/10 flex items-center justify-center flex-shrink-0">
                                 <i class="fas fa-copy text-[#ff7900] text-sm"></i>
                             </div>
                         </div>
-                        <p class="text-gray-600 text-xs mt-2"><i class="fas fa-hand-pointer text-[10px]"></i> Ketuk untuk menyalin</p>
+                        <p class="text-gray-300 text-[13px] sm:text-sm mt-2"><i class="fas fa-hand-pointer text-xs"></i> Ketuk untuk menyalin</p>
                     </div>
                     ` : ''}
 
                     ${tripay.qr_string ? `
                     <div class="flex flex-col items-center gap-2">
-                        <p class="text-gray-500 text-xs font-semibold tracking-wider uppercase">Scan QRIS</p>
+                        <p class="text-gray-300 text-[13px] sm:text-sm font-semibold tracking-wider uppercase">Scan QRIS</p>
                         <div class="bg-white p-3 rounded-2xl shadow-xl inline-block" id="tripayQrContainer"></div>
                     </div>
                     ` : ''}
@@ -1116,14 +1116,14 @@
                     ` : ''}
 
                     ${tripay.expired_time ? `
-                    <div class="flex items-center justify-between bg-white/3 rounded-xl px-4 py-3 border border-white/6 text-sm">
-                        <span class="text-gray-400">Batas Waktu Pembayaran</span>
+                    <div class="flex items-center justify-between bg-white/3 rounded-xl px-4 py-3 border border-white/6 text-sm sm:text-[15px]">
+                        <span class="text-gray-200">Batas Waktu Pembayaran</span>
                         <span class="text-[#ff7900] font-mono font-bold" id="tripayCountdown">--:--:--</span>
                     </div>
                     ` : ''}
 
                     <a href="/success/${transactionCode}"
-                        class="block w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors mt-2">
+                        class="block w-full text-center text-sm sm:text-[15px] text-gray-200 hover:text-white transition-colors mt-2 underline underline-offset-4 decoration-white/20 hover:decoration-white/60">
                         Sudah bayar? Lihat status pesanan →
                     </a>
                 </div>

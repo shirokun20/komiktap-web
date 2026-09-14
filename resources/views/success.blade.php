@@ -88,23 +88,23 @@
         <!-- Transaction Details -->
         <div class="bg-[#0f0e13]/50 rounded-2xl p-4 sm:p-6 md:p-8 mb-8 sm:mb-10 text-left border border-white/5 space-y-3 sm:space-y-4">
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">Transaction Code</span>
+                <span class="text-gray-300 shrink-0">Transaction Code</span>
                 <span class="text-white font-mono font-bold tracking-wider text-base md:text-lg min-w-0 break-all">{{ $transaction->code }}</span>
             </div>
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">Plan</span>
+                <span class="text-gray-300 shrink-0">Plan</span>
                 <span class="text-white font-medium text-base sm:text-lg min-w-0 break-words">{{ $transaction->plan_name }}</span>
             </div>
 
             @if($transaction->discount_amount > 0)
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">Discount ({{ $transaction->voucher_code }})</span>
+                <span class="text-gray-300 shrink-0">Discount ({{ $transaction->voucher_code }})</span>
                 <span class="text-green-500 font-medium min-w-0 break-words">- IDR {{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
             </div>
             @endif
 
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">Nominal Pesanan</span>
+                <span class="text-gray-300 shrink-0">Nominal Pesanan</span>
                 <span class="text-white font-semibold min-w-0 break-words">IDR {{ number_format($transaction->amount, 0, ',', '.') }}</span>
             </div>
 
@@ -116,45 +116,45 @@
 
             @if($transaction->fansku_support_id && !is_null($fanskuFee))
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">Biaya Layanan QRIS (0,6%)</span>
+                <span class="text-gray-300 shrink-0">Biaya Layanan QRIS (0,6%)</span>
                 <span class="text-white font-semibold min-w-0 break-words">IDR {{ number_format($fanskuFee, 0, ',', '.') }}</span>
             </div>
             @endif
 
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">{{ $transaction->status === 'approved' ? 'Total Paid' : 'Total Tagihan' }}</span>
+                <span class="text-gray-300 shrink-0">{{ $transaction->status === 'approved' ? 'Total Paid' : 'Total Tagihan' }}</span>
                 <span class="text-white font-bold text-base sm:text-lg min-w-0 break-words">IDR {{ number_format($fanskuTotal ?? $transaction->amount, 0, ',', '.') }}</span>
             </div>
             @if($transaction->fansku_support_id)
-            <p class="text-gray-600 text-[11px] leading-relaxed">
-                <i class="fas fa-info-circle mr-1"></i>
+            <p class="text-gray-300 text-[13px] sm:text-sm leading-relaxed">
+                <i class="fas fa-info-circle mr-1 text-komik-primary"></i>
                 Biaya layanan diteruskan ke penyedia pembayaran (Fansku/Xendit), bukan tambahan dari KomikTap.
             </p>
             @endif
 
             @if($transaction->fansku_support_id)
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">Fansku Reference</span>
+                <span class="text-gray-300 shrink-0">Fansku Reference</span>
                 <span class="text-white font-mono text-sm min-w-0 break-all">{{ $transaction->fansku_code ?? $transaction->fansku_support_id }}</span>
             </div>
             @endif
 
             @if($transaction->tripay_reference)
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">TriPay Reference</span>
+                <span class="text-gray-300 shrink-0">TriPay Reference</span>
                 <span class="text-white font-mono text-sm min-w-0 break-all">{{ $transaction->tripay_reference }}</span>
             </div>
             @endif
 
             @if($transaction->tripay_payment_method)
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">Payment Method</span>
+                <span class="text-gray-300 shrink-0">Payment Method</span>
                 <span class="text-white font-medium min-w-0 break-words">{{ $transaction->tripay_payment_method }}</span>
             </div>
             @endif
 
             <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm md:text-base gap-1">
-                <span class="text-gray-500 shrink-0">Status</span>
+                <span class="text-gray-300 shrink-0">Status</span>
                 @if($transaction->status === 'approved')
                     <span class="self-start md:self-auto bg-green-500/10 text-green-500 text-xs md:text-sm px-3 py-1 rounded-lg font-bold uppercase tracking-wide">Approved</span>
                 @elseif($transaction->status === 'rejected')
@@ -168,17 +168,17 @@
         <!-- Next Steps -->
         <div class="space-y-4">
             @if($transaction->status === 'approved')
-            <div class="text-xs text-gray-500 leading-relaxed">
+            <div class="text-[13px] sm:text-sm text-gray-300 leading-relaxed">
                 <i class="fas fa-info-circle mr-1 text-komik-primary"></i>
                 Check your WhatsApp/Email regularly. We will send the <b>License Key</b> once approved.
             </div>
             @elseif($transaction->status === 'rejected')
-            <div class="text-xs text-gray-500 leading-relaxed">
+            <div class="text-[13px] sm:text-sm text-gray-300 leading-relaxed">
                 <i class="fas fa-info-circle mr-1 text-red-400"></i>
                 Transaksi ini tidak dapat dilanjutkan. Silakan buat pesanan baru jika masih membutuhkan layanan.
             </div>
             @else
-            <div class="text-xs text-gray-500 leading-relaxed">
+            <div class="text-[13px] sm:text-sm text-gray-300 leading-relaxed">
                 <i class="fas fa-qrcode mr-1 text-komik-primary"></i>
                 Status masih <b>Pending</b> — pembayaran belum diterima. Kembali ke halaman bayar untuk scan QRIS, lalu refresh halaman ini.
             </div>
