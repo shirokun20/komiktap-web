@@ -43,7 +43,7 @@ return [
     | coverUrl dan chapter pages ditulis ulang ke endpoint image lokal agar
     | tidak kena blokir hotlink. Hanya host berikut yang diizinkan.
     */
-    'image_allowed_hosts' => ['komiktap.info', 'cdn.uqni.net'],
+    'image_allowed_hosts' => ['komiktap.info', 'cdn.uqni.net', 'ktser.xyz'],
     /*
     |--------------------------------------------------------------------------
     | Alias host gambar -> host kanonis

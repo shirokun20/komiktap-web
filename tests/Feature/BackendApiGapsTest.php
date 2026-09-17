@@ -208,6 +208,21 @@ class BackendApiGapsTest extends TestCase
         }
     }
 
+    public function test_chapter_pages_from_new_cdn_host_are_proxied()
+    {
+        Http::fake([
+            'komiktap.info/*' => Http::response([
+                'id' => 'x-chapter-1', 'number' => 1, 'title' => 'Chapter 1',
+                'pages' => ['https://ktser.xyz/wp-content/01.jpg'],
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/api/v2/catalog/comics/x/chapters/1');
+
+        $response->assertOk();
+        $this->assertStringStartsWith(url('/api/v2/catalog/image'), $response->json('data.pages.0'));
+    }
+
     public function test_api_user_without_accept_returns_json_401_not_redirect()
     {
         $response = $this->get('/api/user');
