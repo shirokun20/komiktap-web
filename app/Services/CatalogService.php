@@ -20,6 +20,9 @@ class CatalogService
     /** @var list<string> */
     protected array $imageAllowedHosts;
 
+    /** @var list<string> */
+    protected array $imageHostAliases;
+
     public function __construct()
     {
         $this->baseUrl = rtrim((string) config('catalog.upstream_base_url'), '/');
@@ -31,6 +34,10 @@ class CatalogService
         $this->imageAllowedHosts = array_map(
             fn ($host) => mb_strtolower(trim((string) $host)),
             (array) config('catalog.image_allowed_hosts', [])
+        );
+        $this->imageHostAliases = array_map(
+            fn ($host) => mb_strtolower(trim((string) $host)),
+            (array) config('catalog.image_host_aliases', [])
         );
     }
 
@@ -236,6 +243,17 @@ class CatalogService
         }
 
         $host = mb_strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        // Host alias (mirror/IP) -> host kanonis agar tak ada URL luar bocor.
+        if ($host !== '' && in_array($host, $this->imageHostAliases, true)) {
+            $base = $this->siteBaseUrl();
+            $canonical = mb_strtolower((string) parse_url($base, PHP_URL_HOST));
+            $scheme = (string) parse_url($base, PHP_URL_SCHEME) ?: 'https';
+            if ($canonical !== '') {
+                $url = preg_replace('#^https?://[^/]+#i', $scheme.'://'.$canonical, $url) ?? $url;
+                $host = $canonical;
+            }
+        }
 
         if ($host === '' || ! in_array($host, $this->imageAllowedHosts, true)) {
             return $url;

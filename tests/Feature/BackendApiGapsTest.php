@@ -185,6 +185,29 @@ class BackendApiGapsTest extends TestCase
             ->assertJsonCount(1, 'data.items');
     }
 
+    public function test_cover_from_alias_host_is_rewritten_to_canonical()
+    {
+        Http::fake([
+            'komiktap.info/*' => Http::response([
+                'data' => [
+                    ['id' => 'a', 'title' => 'A', 'coverUrl' => 'https://komiktap.in/wp-content/a.jpg'],
+                    ['id' => 'b', 'title' => 'B', 'coverUrl' => 'https://194.233.66.232/wp-content/b.png'],
+                    ['id' => 'c', 'title' => 'C', 'coverUrl' => 'https://92.87.6.124/wp-content/c.webp'],
+                ],
+                'pagination' => ['page' => 1, 'perPage' => 20, 'total' => 3, 'totalPages' => 1],
+            ], 200),
+        ]);
+
+        $response = $this->getJson('/api/v2/catalog/comics?search=abc');
+
+        $response->assertOk();
+        foreach ($response->json('data.items') as $item) {
+            $this->assertStringStartsWith(url('/api/v2/catalog/image'), $item['coverUrl']);
+            $this->assertStringContainsString('komiktap.info', rawurldecode($item['coverUrl']));
+            $this->assertStringNotContainsString('komiktap.in/wp-content', rawurldecode($item['coverUrl']));
+        }
+    }
+
     public function test_api_user_without_accept_returns_json_401_not_redirect()
     {
         $response = $this->get('/api/user');

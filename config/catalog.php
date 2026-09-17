@@ -44,6 +44,19 @@ return [
     | tidak kena blokir hotlink. Hanya host berikut yang diizinkan.
     */
     'image_allowed_hosts' => ['komiktap.info', 'cdn.uqni.net'],
+    /*
+    |--------------------------------------------------------------------------
+    | Alias host gambar -> host kanonis
+    |--------------------------------------------------------------------------
+    | Upstream kadang mengembalikan cover/page dari domain mirror atau IP
+    | langsung (mis. komiktap.in). Host di bawah ditulis ulang ke host
+    | kanonis (dari site_base_url) sebelum di-proxy, agar klien tidak
+    | pernah memegang URL di luar domain resmi.
+    */
+    'image_host_aliases' => array_filter(array_map(
+        'trim',
+        explode(',', (string) env('CATALOG_IMAGE_HOST_ALIASES', 'komiktap.in,194.233.66.232,92.87.6.124'))
+    )),
     'image_timeout' => (int) env('CATALOG_IMAGE_TIMEOUT', 15),
     'image_max_bytes' => (int) env('CATALOG_IMAGE_MAX_BYTES', 15728640), // 15 MB
 
