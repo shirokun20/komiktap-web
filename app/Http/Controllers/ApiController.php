@@ -86,6 +86,69 @@ class ApiController extends Controller
         ]);
     }
 
+    /**
+     * GET /api/purchase-history — riwayat milik email login saja.
+     * Status DB dipetakan ke kontrak mobile: approved→paid, rejected→failed.
+     */
+    public function purchaseHistory(Request $request)
+    {
+        $validated = $request->validate([
+            'page' => 'nullable|integer|min:1|max:10000',
+            'perPage' => 'nullable|integer|min:1|max:100',
+            'status' => 'nullable|string|in:pending,paid',
+        ]);
+
+        $email = $request->user()?->email;
+        $query = \App\Models\Transaction::where('customer_contact', $email)->latest();
+
+        if (! empty($validated['status'])) {
+            $query->where('status', $validated['status'] === 'paid' ? 'approved' : 'pending');
+        }
+
+        $page = (int) ($validated['page'] ?? 1);
+        $perPage = (int) ($validated['perPage'] ?? 20);
+        $total = (int) $query->count();
+        $rows = $query->forPage($page, $perPage)->get();
+
+        $items = $rows->map(function ($t) {
+            $raw = $t->fansku_raw_response;
+            if (! is_array($raw)) {
+                $raw = [];
+            }
+
+            $mapped = $t->status === 'approved' ? 'paid' : ($t->status === 'rejected' ? 'failed' : 'pending');
+
+            $item = [
+                'transaction_code' => $t->code,
+                'plan_name' => $t->plan_name,
+                'device_quota' => (int) $t->device_quota,
+                'duration_months' => (int) $t->duration_months,
+                'amount' => $t->amount,
+                'fee' => $raw['fee'] ?? $t->tripay_fee ?? 0,
+                'total_amount' => $raw['total_amount'] ?? $t->amount,
+                'payment_channel' => $t->fansku_support_id ? 'QRIS Otomatis' : ($t->payment_method ?? 'Manual'),
+                'status' => $mapped,
+                'created_at' => $t->created_at,
+            ];
+
+            if ($t->status === 'pending') {
+                $item['qr_string'] = app(\App\Services\FanskuService::class)->extractQrString($raw);
+            }
+
+            return $item;
+        })->values();
+
+        return $this->success([
+            'items' => $items,
+            'pagination' => [
+                'page' => $page,
+                'perPage' => $perPage,
+                'total' => $total,
+                'totalPages' => (int) ceil($total / $perPage),
+            ],
+        ]);
+    }
+
     public function checkVoucher(Request $request)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [

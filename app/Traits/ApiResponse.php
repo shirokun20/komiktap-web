@@ -48,12 +48,20 @@ trait ApiResponse
      */
     protected function validationError($errors): JsonResponse
     {
+        $message = 'Validation error';
+        if ($errors instanceof \Illuminate\Support\MessageBag) {
+            $message = $errors->first() ?: $message;
+            $errors = $errors->messages();
+        } elseif ($errors instanceof \Illuminate\Contracts\Support\MessageProvider) {
+            $message = $errors->getMessageBag()->first() ?: $message;
+            $errors = $errors->getMessageBag()->messages();
+        }
+
         return response()->json([
             'app' => 'Kuron',
             'version' => config('app.version', '1.0.0'),
-            'data' => $errors,
+            'data' => ['message' => $message, 'errors' => $errors],
             'status' => 'failed',
-            'message' => 'Validation error'
         ], 422);
     }
 }

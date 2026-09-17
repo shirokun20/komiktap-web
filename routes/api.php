@@ -32,6 +32,9 @@ Route::get('/checkout/fansku/{transaction:code}', [\App\Http\Controllers\Checkou
     ->middleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, 'auth:sanctum']);
 Route::post('/check-voucher', [\App\Http\Controllers\ApiController::class, 'checkVoucher'])
     ->middleware('throttle:' . config('tripay.rate_limit.voucher', '10,10'));
+// Riwayat pembelian milik sendiri (kunci email login, qr hanya pending).
+Route::get('/purchase-history', [\App\Http\Controllers\ApiController::class, 'purchaseHistory'])
+    ->middleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, 'auth:sanctum']);
 Route::post('/check-license', [\App\Http\Controllers\LicenseController::class, 'check'])
     ->middleware('throttle:' . config('tripay.rate_limit.license_check', '10,10'));
 Route::post('/error-report', [\App\Http\Controllers\Api\ErrorReportController::class, 'store'])
@@ -48,6 +51,7 @@ Route::prefix('v2/catalog')
         Route::get('/comics/{id}/chapters/{number}', [\App\Http\Controllers\Api\CatalogController::class, 'chapter'])
             ->where('id', '[a-z0-9][a-z0-9-]*')
             ->where('number', '[0-9]+(?:\.[0-9]+)?');
+        Route::get('/projects', [\App\Http\Controllers\Api\CatalogController::class, 'projects']);
         Route::get('/announcements', [\App\Http\Controllers\Api\CatalogController::class, 'announcements']);
         Route::get('/image', [\App\Http\Controllers\Api\CatalogController::class, 'image']);
         Route::get('/genres/{slug}', [\App\Http\Controllers\Api\CatalogController::class, 'byGenre'])

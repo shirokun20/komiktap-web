@@ -22,6 +22,21 @@ class CatalogController extends Controller
      */
     public function comics(Request $request)
     {
+        $type = $request->query('type');
+        $type = is_string($type) && $type !== '' ? mb_strtolower(trim($type)) : null;
+        if ($type !== null && ! isset(\App\Services\CatalogHtmlService::TYPE_PATHS[$type])) {
+            return $this->error('Nilai type tidak valid. Gunakan: manga, manhua, manhwa.', 400);
+        }
+
+        $status = $request->query('status');
+        $status = is_string($status) && $status !== '' ? mb_strtolower(trim($status)) : null;
+        if ($status !== null && ! in_array($status, ['ongoing', 'completed', 'complete'], true)) {
+            return $this->error('Nilai status tidak valid. Gunakan: ongoing, completed.', 400);
+        }
+        if ($status === 'complete') {
+            $status = 'completed';
+        }
+
         $validated = $request->validate([
             'search' => 'nullable|string|max:255',
             'page' => 'nullable|integer|min:1|max:10000',
@@ -29,6 +44,26 @@ class CatalogController extends Controller
             'orderBy' => 'nullable|string|in:lastUpdated,title,rating,views,totalChapters',
             'order' => 'nullable|string|in:asc,desc',
         ]);
+
+        // Upstream resmi tak dukung filter tipe/status: layani dari
+        // halaman list situs yang memang sudah terfilter natively.
+        if ($type !== null || $status !== null) {
+            try {
+                $result = $this->html->filteredList(
+                    $type,
+                    $status,
+                    (string) ($validated['search'] ?? ''),
+                    (int) ($validated['page'] ?? 1),
+                    (int) ($validated['perPage'] ?? 20),
+                    (string) ($validated['orderBy'] ?? 'lastUpdated'),
+                    (string) ($validated['order'] ?? 'desc'),
+                );
+            } catch (CatalogException $e) {
+                return $this->error($e->getMessage(), $e->status());
+            }
+
+            return $this->success($result);
+        }
 
         try {
             $result = $this->catalog->comics([
@@ -38,6 +73,33 @@ class CatalogController extends Controller
                 'orderBy' => $validated['orderBy'] ?? 'lastUpdated',
                 'order' => $validated['order'] ?? 'desc',
             ]);
+        } catch (CatalogException $e) {
+            return $this->error($e->getMessage(), $e->status());
+        }
+
+        return $this->success($result);
+    }
+
+    /**
+     * GET /api/v2/catalog/projects
+     * Daftar Project garapan tim (sumber /project/ situs).
+     */
+    public function projects(Request $request)
+    {
+        $validated = $request->validate([
+            'page' => 'nullable|integer|min:1|max:10000',
+            'perPage' => 'nullable|integer|min:1|max:100',
+            'orderBy' => 'nullable|string|in:lastUpdated,title,rating,views,totalChapters',
+            'order' => 'nullable|string|in:asc,desc',
+        ]);
+
+        try {
+            $result = $this->html->projectsList(
+                (int) ($validated['page'] ?? 1),
+                (int) ($validated['perPage'] ?? 20),
+                (string) ($validated['orderBy'] ?? 'lastUpdated'),
+                (string) ($validated['order'] ?? 'desc'),
+            );
         } catch (CatalogException $e) {
             return $this->error($e->getMessage(), $e->status());
         }

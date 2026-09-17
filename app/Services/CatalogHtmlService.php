@@ -15,6 +15,262 @@ class CatalogHtmlService
 {
     public function __construct(protected CatalogService $catalog) {}
 
+    /** @var array<string,string> */
+    public const TYPE_PATHS = [
+        'manga' => '/list-manga/',
+        'manhua' => '/list-manhua/',
+        'manhwa' => '/list-manhwa/',
+    ];
+
+    /** @var array<string,string> */
+    public const STATUS_PATHS = [
+        'ongoing' => '/ongoing/',
+        'completed' => '/tamat/',
+    ];
+
+    public const PROJECTS_PATH = '/project/';
+
+    /**
+     * Daftar terfilter (tipe/status) dari halaman list situs.
+     * Upstream resmi tidak mendukung filter ini, jadi sumbernya scrape
+     * server-side halaman yang memang sudah terfilter natively.
+     * Paginasi 1:1 dengan halaman situs (page klienta = page situs);
+     * `total` = totalPages situs x jumlah card halaman ini (aproksimasi,
+     * cukup untuk logika hasMore; totalPages-nya eksak dari nav situs).
+     *
+     * @return array{items:list<array{id:string,title:string,coverUrl:string,rating:float|null,status:string|null,type:string|null,totalChapters:int|null}>,pagination:array{page:int,perPage:int,total:int,totalPages:int}}
+     */
+    public function filteredList(?string $type, ?string $status, string $search = '', int $page = 1, int $perPage = 20, string $orderBy = 'lastUpdated', string $order = 'desc'): array
+    {
+        $page = max(1, $page);
+        $base = $type !== null && isset(self::TYPE_PATHS[$type])
+            ? self::TYPE_PATHS[$type]
+            : (isset(self::STATUS_PATHS[(string) $status]) ? self::STATUS_PATHS[(string) $status] : null);
+
+        if ($base === null) {
+            throw new CatalogException('Filter tidak valid.', 400);
+        }
+
+        $path = $page <= 1 ? $base : rtrim($base, '/').'/page/'.$page.'/';
+
+        try {
+            $html = $this->catalog->fetchSiteHtml($path);
+        } catch (CatalogException $e) {
+            // Halaman di luar jangkauan situs = hasil kosong, bukan error.
+            if ($e->status() === 404 && $page > 1) {
+                return ['items' => [], 'pagination' => ['page' => $page, 'perPage' => $perPage, 'total' => 0, 'totalPages' => 0]];
+            }
+
+            throw $e;
+        }
+
+        $doc = $this->loadHtml($html);
+        $xpath = new DOMXPath($doc);
+
+        $items = $this->listCards($xpath);
+
+        // Saring lokal: status (bila sumbernya halaman tipe) + search.
+        if ($status !== null && $status !== '') {
+            $want = mb_strtolower($status) === 'complete' ? 'completed' : mb_strtolower($status);
+            $items = array_values(array_filter(
+                $items,
+                fn ($it) => mb_strtolower((string) ($it['status'] ?? '')) === $want
+            ));
+        }
+
+        if (trim($search) !== '') {
+            $needle = mb_strtolower(trim($search));
+            $items = array_values(array_filter(
+                $items,
+                fn ($it) => str_contains(mb_strtolower((string) $it['title']), $needle)
+            ));
+        }
+
+        $items = $this->sortCards($items, $orderBy, $order);
+
+        $nav = $this->azPagination($xpath, $page);
+        $totalPages = max($page, $nav['totalPages']);
+        $count = count($items);
+
+        if ($count === 0) {
+            \Illuminate\Support\Facades\Log::warning('CatalogHtmlService: zero cards parsed', ['path' => $path]);
+
+            return ['items' => [], 'pagination' => ['page' => $page, 'perPage' => $perPage, 'total' => 0, 'totalPages' => 0]];
+        }
+
+        return [
+            'items' => $items,
+            'pagination' => [
+                'page' => $page,
+                'perPage' => $perPage,
+                'total' => $totalPages * $count,
+                'totalPages' => $totalPages,
+            ],
+        ];
+    }
+
+    /**
+     * Daftar Project dari /project/ (+ /page/{n}/), envelope sama.
+     *
+     * @return array{items:list<array{id:string,title:string,coverUrl:string,rating:float|null,status:string|null,type:string|null,totalChapters:int|null}>,pagination:array{page:int,perPage:int,total:int,totalPages:int}}
+     */
+    public function projectsList(int $page = 1, int $perPage = 20, string $orderBy = 'lastUpdated', string $order = 'desc'): array
+    {
+        $page = max(1, $page);
+        $path = $page <= 1 ? self::PROJECTS_PATH : rtrim(self::PROJECTS_PATH, '/').'/page/'.$page.'/';
+
+        try {
+            $html = $this->catalog->fetchSiteHtml($path);
+        } catch (CatalogException $e) {
+            if ($e->status() === 404 && $page > 1) {
+                return ['items' => [], 'pagination' => ['page' => $page, 'perPage' => $perPage, 'total' => 0, 'totalPages' => 0]];
+            }
+
+            throw $e;
+        }
+
+        $doc = $this->loadHtml($html);
+        $xpath = new DOMXPath($doc);
+
+        $items = $this->sortCards($this->listCards($xpath), $orderBy, $order);
+        $nav = $this->azPagination($xpath, $page);
+        $totalPages = max($page, $nav['totalPages']);
+        $count = count($items);
+
+        if ($count === 0) {
+            \Illuminate\Support\Facades\Log::warning('CatalogHtmlService: zero project cards parsed', ['path' => $path]);
+
+            return ['items' => [], 'pagination' => ['page' => $page, 'perPage' => $perPage, 'total' => 0, 'totalPages' => 0]];
+        }
+
+        return [
+            'items' => $items,
+            'pagination' => [
+                'page' => $page,
+                'perPage' => $perPage,
+                'total' => $totalPages * $count,
+                'totalPages' => $totalPages,
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array{id:string,title:string,coverUrl:string,rating:float|null,status:string|null,type:string|null,totalChapters:int|null}>
+     */
+    protected function listCards(DOMXPath $xpath): array
+    {
+        $items = [];
+
+        $nodes = $xpath->query('//div[contains(concat(" ", normalize-space(@class), " "), " bs ")]');
+        if ($nodes === false) {
+            return $items;
+        }
+
+        foreach ($nodes as $node) {
+            if (! $node instanceof DOMElement) {
+                continue;
+            }
+
+            $item = $this->listCard($node, $xpath);
+            if ($item !== null) {
+                $items[] = $item;
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array{id:string,title:string,coverUrl:string,rating:float|null,status:string|null,type:string|null,totalChapters:int|null}|null
+     */
+    protected function listCard(DOMElement $node, DOMXPath $xpath): ?array
+    {
+        $link = $xpath->query('.//a[@href]', $node)->item(0);
+        if (! $link instanceof DOMElement) {
+            return null;
+        }
+
+        $title = trim($link->getAttribute('title'));
+        if ($title === '') {
+            $title = trim((string) $xpath->evaluate('string(.//div[contains(concat(" ", normalize-space(@class), " "), " tt ")])', $node));
+        }
+
+        $slug = $this->mangaSlugFromUrl(trim($link->getAttribute('href')));
+        if ($slug === null || $title === '') {
+            return null;
+        }
+
+        $img = $xpath->query('.//img[@src]', $node)->item(0);
+        $cover = $img instanceof DOMElement ? trim($img->getAttribute('src')) : '';
+
+        $status = $xpath->evaluate('string(.//span[contains(concat(" ", normalize-space(@class), " "), " status ")])', $node);
+        // <span class="type Manhwa"></span>: nama tipe ada di atribut class, bukan teks.
+        $typeNode = $xpath->query('.//span[contains(concat(" ", normalize-space(@class), " "), " type ")]', $node)->item(0);
+        $type = null;
+        if ($typeNode instanceof DOMElement) {
+            foreach (preg_split('/\s+/', trim($typeNode->getAttribute('class'))) ?: [] as $token) {
+                if (strcasecmp($token, 'type') !== 0 && $token !== '') {
+                    $type = $token;
+                    break;
+                }
+            }
+            if ($type === null) {
+                $text = trim($typeNode->textContent);
+                $type = $text !== '' ? $text : null;
+            }
+        }
+        $score = $xpath->evaluate('string(.//div[contains(concat(" ", normalize-space(@class), " "), " numscore ")])', $node);
+        $ep = $xpath->evaluate('string(.//div[contains(concat(" ", normalize-space(@class), " "), " epxs ")])', $node);
+
+        $chapters = null;
+        if (is_string($ep) && preg_match('/(\d+)/', $ep, $m)) {
+            $chapters = (int) $m[1];
+        }
+
+        return [
+            'id' => $slug,
+            'title' => html_entity_decode($title, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            'coverUrl' => $this->catalog->imageUrl($cover),
+            'rating' => is_string($score) && is_numeric(trim($score)) ? (float) trim($score) : null,
+            'status' => is_string($status) && trim($status) !== '' ? trim($status) : null,
+            'type' => $type,
+            'totalChapters' => $chapters,
+        ];
+    }
+
+    /**
+     * Sortir lokal per halaman; field yang tak ada dianggap setara
+     * (urutan situs dipertahankan) — tanpa index penuh tak bisa lebih baik.
+     *
+     * @param list<array<string,mixed>> $items
+     * @return list<array<string,mixed>>
+     */
+    protected function sortCards(array $items, string $orderBy, string $order): array
+    {
+        if ($orderBy === 'lastUpdated') {
+            return $order === 'asc' ? array_reverse($items) : $items;
+        }
+
+        $dir = $order === 'asc' ? 1 : -1;
+
+        usort($items, function ($a, $b) use ($orderBy, $dir) {
+            $va = $a[$orderBy] ?? null;
+            $vb = $b[$orderBy] ?? null;
+
+            if ($va === null || $vb === null || $va === $vb) {
+                return 0;
+            }
+
+            if (is_numeric($va) && is_numeric($vb)) {
+                return $dir * ((float) $va <=> (float) $vb);
+            }
+
+            return $dir * strcasecmp((string) $va, (string) $vb);
+        });
+
+        return $items;
+    }
+
     /**
      * Daftar genre dari https://komiktap.info/genres/ (ul.taxindex > li).
      *
